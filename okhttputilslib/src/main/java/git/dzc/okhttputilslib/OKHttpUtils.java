@@ -130,13 +130,14 @@ public class OKHttpUtils {
         getData(url,CacheControl.FORCE_CACHE,headers,callback);
     }
 
-    public void getData(String url,CacheControl cacheControl,Headers headers,final Callback callback){
-        Request.Builder requestBuilder = new Request.Builder().url(url).cacheControl(cacheControl);
+    public void getData(String url, final CacheControl cacheControl, Headers headers, final Callback callback){
+        final Request.Builder requestBuilder = new Request.Builder().url(url).cacheControl(cacheControl);
         if(headers!=null){
             requestBuilder.headers(headers);
         }
         requestBuilder.tag(url);
-        getData(requestBuilder.build(),new Callback() {
+        final Request request = requestBuilder.build();
+        getData(request,new Callback() {
             @Override
             public void onFailure(Request request, IOException e) {
                 callback.onFailure(request,e);
@@ -144,6 +145,12 @@ public class OKHttpUtils {
 
             @Override
             public void onResponse(Response response) throws IOException {
+                if(response.code()==504){
+                    if(CacheControl.FORCE_CACHE == cacheControl){
+                        callback.onFailure(request,new IOException("cached not found"));
+                        return;
+                    }
+                }
                 callback.onResponse(response);
             }
         });

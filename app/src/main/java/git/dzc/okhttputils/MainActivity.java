@@ -72,8 +72,14 @@ public class MainActivity extends AppCompatActivity {
     private void getData(final CacheType cacheType){
         okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType ,new Callback() {
             @Override
-            public void onFailure(Request request, IOException e) {
+            public void onFailure(Request request, final IOException e) {
                 Log.d("failed",e.toString());
+                tv5.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        tv5.setText(cacheType.name()+"  "+e.toString());
+                    }
+                });
             }
 
             @Override
