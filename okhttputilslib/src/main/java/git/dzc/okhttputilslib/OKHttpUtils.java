@@ -33,7 +33,7 @@ public class OKHttpUtils {
 
     private OKHttpUtils() {
     }
-    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge, List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors){
+    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge,CacheType cacheType ,List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors){
         client = new OkHttpClient();
         if(cachedDir!=null){
             client.setCache(new Cache(cachedDir,maxCacheSize));
@@ -162,6 +162,7 @@ public class OKHttpUtils {
         private List<Interceptor> networkInterceptors;
         private List<Interceptor> interceptors;
         private int maxCacheAge = 3600 * 12;
+        private CacheType cacheType = CacheType.NETWORK_ELSE_CACHED;
 
 
         public Builder(Context context) {
@@ -172,7 +173,12 @@ public class OKHttpUtils {
         }
 
         public OKHttpUtils build(){
-            return new OKHttpUtils(context,maxCachedSize,cachedDir,maxCacheAge,networkInterceptors,interceptors);
+            return new OKHttpUtils(context,maxCachedSize,cachedDir,maxCacheAge,cacheType,networkInterceptors,interceptors);
+        }
+
+        public Builder cacheType(CacheType cacheType){
+            this.cacheType = cacheType;
+            return this;
         }
 
         public Builder cachedDir(File cachedDir) {
