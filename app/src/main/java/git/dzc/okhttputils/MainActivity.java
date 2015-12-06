@@ -21,6 +21,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv2;
     private TextView tv3;
     private TextView tv4;
+    private TextView tv5;
 
     private OKHttpUtils okHttpUtils;
 
@@ -35,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
         tv2 = (TextView) findViewById(R.id.tv2);
         tv3 = (TextView) findViewById(R.id.tv3);
         tv4 = (TextView) findViewById(R.id.tv4);
+        tv5 = (TextView) findViewById(R.id.tv5);
 
         tv1.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -66,7 +68,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    private void getData(CacheType cacheType){
+    private void getData(final CacheType cacheType){
         okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType ,new Callback() {
             @Override
             public void onFailure(Request request, IOException e) {
@@ -74,10 +76,17 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onResponse(Response response) throws IOException {
+            public void onResponse(final Response response) throws IOException {
                 //  tv.setText(response.body().string());
                 Log.d("response", response.toString());
-                Log.d("response", response.body().string());
+                final String str = response.body().string();
+                Log.d("response", str);
+                tv5.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        tv5.setText(cacheType.name()+"  "+str);
+                    }
+                });
             }
         });
     }
