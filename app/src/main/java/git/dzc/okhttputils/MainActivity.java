@@ -67,7 +67,7 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void getData(CacheType cacheType){
-        okHttpUtils.get("http://graph.luoo.net/index/random?platform=android&version=5.0.0&key=75f2e281092382e903101f2fdd04ecea", cacheType ,new Callback() {
+        okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType ,new Callback() {
             @Override
             public void onFailure(Request request, IOException e) {
                 Log.d("failed",e.toString());
