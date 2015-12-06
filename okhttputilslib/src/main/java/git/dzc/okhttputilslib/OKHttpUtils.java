@@ -135,6 +135,7 @@ public class OKHttpUtils {
         if(headers!=null){
             requestBuilder.headers(headers);
         }
+        requestBuilder.tag(url);
         getData(requestBuilder.build(),new Callback() {
             @Override
             public void onFailure(Request request, IOException e) {
@@ -249,6 +250,7 @@ public class OKHttpUtils {
         if(headers!=null){
             requestBuilder.headers(headers);
         }
+        requestBuilder.tag(url);
         post(requestBuilder.build(),callback);
     }
 
@@ -267,5 +269,13 @@ public class OKHttpUtils {
     }
     public void post(String url,Map<String,String> params, Headers headers,Callback callback){
         post(url, params, headers,null,null, callback);
+    }
+
+    /**
+     * 通过url来取消一个请求  如果一个请求正在进行IO操作，会抛出异常，如果使用自定义的Request，必须设置request的Tag为url才能有效
+     * @param url
+     */
+    public void cancel(String url){
+        client.cancel(url);
     }
 }
