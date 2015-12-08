@@ -4,7 +4,7 @@
 
 *ONLY_NETWORK  只查询网络数据
 
-*ONLY_CACHED   只查询本地缓存，如果本地没有缓存，会报504错误
+*ONLY_CACHED   只查询本地缓存
 
 *CACHED_ELSE_NETWORK  先查询本地缓存，如果本地没有，再查询网络数据
 
