@@ -306,6 +306,37 @@ public class OKHttpUtils<T>{
         post(requestBuilder.build(),callback);
     }
 
+    public void post(String url, Map<String,String> params, Headers headers, String encodedKey, String encodedValue, final JsonCallBack jsonCallBack){
+        post(url, params, headers, encodedKey, encodedValue, new Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+                if(jsonCallBack!=null){
+                    jsonCallBack.onFailure(request,e);
+                }
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                if(response.isSuccessful() && jsonCallBack!=null){
+                    String jsonString = response.body().string();;
+                    if(!TextUtils.isEmpty(jsonString)){
+                        Object result = null;
+                        try {
+                            result =  gson.fromJson(jsonString,jsonCallBack.getType());
+                            jsonCallBack.onResponse(result);
+                        } catch (JsonSyntaxException e) {
+                            jsonCallBack.onFailure(null,new Exception("json string parse error"));
+                            e.printStackTrace();
+                        }
+
+                    }else{
+                        jsonCallBack.onFailure(null,new Exception("json string may be null"));
+                    }
+                }
+            }
+        });
+    }
+
     public void post(Request request,Callback callback){
         client.newCall(request).enqueue(callback);
     }
@@ -323,11 +354,29 @@ public class OKHttpUtils<T>{
         post(url, params, headers,null,null, callback);
     }
 
+    public void post(String url,JsonCallBack callback){
+        post(url,null,null,null,null,callback);
+    }
+    public void post(String url,Map<String,String> params,JsonCallBack callback){
+        post(url,params,null,null,null,callback);
+    }
+    public void post(String url,Headers headers,JsonCallBack callback){
+        post(url,null,headers,null,null,callback);
+    }
+    public void post(String url,Map<String,String> params, Headers headers,JsonCallBack callback){
+        post(url, params, headers,null,null, callback);
+    }
+
     /**
-     * 通过url来取消一个请求  如果一个请求正在进行IO操作，会抛出异常，如果使用自定义的Request，必须设置request的Tag为url才能有效
+     * 通过url来取消一个请求  如果使用自定义的Request,传入request的Tag为url才能有效
      * @param url
      */
     public void cancel(String url){
-        client.cancel(url);
+        try {
+            client.cancel(url);
+        } catch (Exception e) {
+//            e.printStackTrace();
+        }
     }
+
 }

@@ -37,7 +37,7 @@
 来配置默认的配置
 
 
-＃可添加拦截器
+#可添加拦截器
 通过interceptors()和networkInterceptors()可添加拦截器
 拦截器的使用说明请参考这篇文章 [http://www.tuicool.com/articles/Uf6bAnz](http://www.tuicool.com/articles/Uf6bAnz)
 
