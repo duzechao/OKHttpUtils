@@ -6,18 +6,16 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import com.google.gson.Gson;
-import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Request;
-import com.squareup.okhttp.Response;
 
 import java.io.IOException;
 
 import git.dzc.okhttputilslib.CacheType;
-import git.dzc.okhttputilslib.JsonCallBack;
+import git.dzc.okhttputilslib.JsonCallback;
 import git.dzc.okhttputilslib.OKHttpUtils;
 
 public class MainActivity extends AppCompatActivity {
+    private String TAG = MainActivity.this.getClass().getSimpleName();
 
     private TextView tv1;
     private TextView tv2;
@@ -72,14 +70,27 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void getData(final CacheType cacheType){
-        okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType,null, new JsonCallBack<DateModule>() {
+        okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType,null, new JsonCallback<DateModule>() {
+
+
+            @Override
+            public void onStart() {
+                Log.d(TAG,"onStart");
+            }
+
+            @Override
+            public void onFinish() {
+                Log.d(TAG,"onFinish");
+            }
+
             @Override
             public void onFailure(Request request, Exception e) {
-
+                Log.d(TAG,"onFailure");
             }
 
             @Override
             public void onResponse(final DateModule object) throws IOException {
+                Log.d(TAG,"onResponse");
                 tv5.post(new Runnable() {
                     @Override
                     public void run() {

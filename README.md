@@ -14,14 +14,28 @@
 
 #简单使用方法：
     okHttpUtils = new OKHttpUtils.Builder(this).build();
-    okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType,null, new JsonCallBack<DateModule>() {
+    okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType,null, new JsonCallback<DateModule>() {
+    
+                //请求开始回调
+                @Override
+                public void onStart() {
+                    Log.d(TAG,"onStart");
+                }
+    
+                //请求结束回调  在onFailure或onRsponse后回调
+                @Override
+                public void onFinish() {
+                    Log.d(TAG,"onFinish");
+                }
+    
                 @Override
                 public void onFailure(Request request, Exception e) {
-
+                    Log.d(TAG,"onFailure");
                 }
-
+    
                 @Override
                 public void onResponse(final DateModule object) throws IOException {
+                    Log.d(TAG,"onResponse");
                     tv5.post(new Runnable() {
                         @Override
                         public void run() {
@@ -45,7 +59,7 @@
 cancel(url)
 
 #添加回调
-调用的时候传入CallBack或JsonCallBack,JsonCallBack使用了Gson解析
+调用的时候传入CallBack或JsonCallBack,JsonCallBack使用了Gson解析,JsonCallBack<DateModule>或JsonCallBack<List<DateModule>>来解析当个module或一个list，支持List<Map<Object,Object>等
 
 #more
 如果所提供的功能不满足需求，可通过getClient()获取到OKHttpClient来使用原生okhttp的功能

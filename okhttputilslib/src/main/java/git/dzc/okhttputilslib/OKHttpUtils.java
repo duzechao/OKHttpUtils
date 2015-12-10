@@ -8,7 +8,6 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.CacheControl;
-import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.FormEncodingBuilder;
 import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.Interceptor;
@@ -78,42 +77,54 @@ public class OKHttpUtils<T>{
         get(url, cacheType,null, callback);
     }
 
-    public void get(String url,JsonCallBack callback){
+    public void get(String url,JsonCallback callback){
         get(url,CacheType.NETWORK_ELSE_CACHED,null,callback);
     }
 
-    public void get(String url,Headers headers,JsonCallBack callback){
+    public void get(String url,Headers headers,JsonCallback callback){
         get(url,CacheType.NETWORK_ELSE_CACHED,headers,callback);
     }
-    public void get(String url,CacheType cacheType,JsonCallBack callback){
+    public void get(String url,CacheType cacheType,JsonCallback callback){
         get(url, cacheType,null, callback);
     }
 
-    public void get(final String url, final CacheType cacheType, final Headers headers , final JsonCallBack jsonCallBack){
+    public void get(final String url, final CacheType cacheType, final Headers headers , final JsonCallback callback){
         get(url, cacheType, headers, new Callback() {
             @Override
+            public void onStart() {
+                if(callback!=null){
+                    callback.onStart();
+                }
+            }
+
+
+            @Override
             public void onFailure(Request request, IOException e) {
-                if(jsonCallBack!=null){
-                    jsonCallBack.onFailure(request,e);
+                if(callback!=null){
+                    callback.onFailure(request,e);
+                    callback.onFinish();
                 }
             }
 
             @Override
             public void onResponse(Response response) throws IOException {
-                if(response.isSuccessful() && jsonCallBack!=null){
+                if(response.isSuccessful() && callback!=null){
                     String jsonString = response.body().string();;
                     if(!TextUtils.isEmpty(jsonString)){
                         Object result = null;
                         try {
-                            result =  gson.fromJson(jsonString,jsonCallBack.getType());
-                            jsonCallBack.onResponse(result);
+                            result =  gson.fromJson(jsonString,callback.getType());
+                            callback.onResponse(result);
+                            callback.onFinish();
                         } catch (JsonSyntaxException e) {
-                            jsonCallBack.onFailure(null,new Exception("json string parse error"));
+                            callback.onFailure(null,new Exception("json string parse error :"+e.toString()));
+                            callback.onFinish();
                             e.printStackTrace();
                         }
 
                     }else{
-                        jsonCallBack.onFailure(null,new Exception("json string may be null"));
+                        callback.onFailure(null,new Exception("json string may be null"));
+                        callback.onFinish();
                     }
                 }
             }
@@ -121,6 +132,7 @@ public class OKHttpUtils<T>{
     }
 
     public void get(final String url, final CacheType cacheType, final Headers headers, final Callback callback){
+        if(callback!=null)callback.onStart();
         switch (cacheType){
             case ONLY_NETWORK:
                 getDataFromNetwork(url,headers,callback);
@@ -131,6 +143,20 @@ public class OKHttpUtils<T>{
             case CACHED_ELSE_NETWORK:
                 getDataFromCached(url,headers, new Callback() {
                     @Override
+                    public void onStart() {
+                        if(callback!=null){
+                            callback.onStart();
+                        }
+                    }
+
+                    @Override
+                    public void onFinish() {
+                        if(callback!=null){
+                            callback.onFinish();
+                        }
+                    }
+
+                    @Override
                     public void onFailure(Request request, IOException e) {
                         getDataFromNetwork(url,headers,callback);
                     }
@@ -138,7 +164,10 @@ public class OKHttpUtils<T>{
                     @Override
                     public void onResponse(Response response) throws IOException {
                         if(response.code()==200){
-                            callback.onResponse(response);
+                            if(callback!=null){
+                                callback.onResponse(response);
+                                callback.onFinish();
+                            }
                         }else{
                             getDataFromNetwork(url,headers,callback);
                         }
@@ -148,6 +177,20 @@ public class OKHttpUtils<T>{
             case NETWORK_ELSE_CACHED:
                 getDataFromNetwork(url,headers, new Callback() {
                     @Override
+                    public void onStart() {
+                        if(callback!=null){
+                            callback.onStart();
+                        }
+                    }
+
+                    @Override
+                    public void onFinish() {
+                        if(callback!=null){
+                            callback.onFinish();
+                        }
+                    }
+
+                    @Override
                     public void onFailure(Request request, IOException e) {
                         getDataFromCached(url,headers,callback);
                     }
@@ -155,7 +198,10 @@ public class OKHttpUtils<T>{
                     @Override
                     public void onResponse(Response response) throws IOException {
                         if(response.code()==200){
-                            callback.onResponse(response);
+                            if(callback!=null){
+                                callback.onResponse(response);
+                                callback.onFinish();
+                            }
                         }else{
                             getDataFromCached(url,headers,callback);
                         }
@@ -183,20 +229,44 @@ public class OKHttpUtils<T>{
         requestBuilder.tag(url);
         final Request request = requestBuilder.build();
         getData(request,new Callback() {
+
+            @Override
+            public void onStart() {
+                if(callback!=null){
+                    callback.onStart();
+                }
+            }
+
+            @Override
+            public void onFinish() {
+                if(callback!=null){
+                    callback.onFinish();
+                }
+            }
+
             @Override
             public void onFailure(Request request, IOException e) {
-                callback.onFailure(request,e);
+                if(callback!=null){
+                    callback.onFailure(request,e);
+                    callback.onFinish();
+                }
             }
 
             @Override
             public void onResponse(Response response) throws IOException {
                 if(response.code()==504){
                     if(CacheControl.FORCE_CACHE == cacheControl){
-                        callback.onFailure(request,new IOException("cached not found"));
+                        if(callback!=null){
+                            callback.onFailure(request,new IOException("cached not found"));
+                            callback.onFinish();
+                        }
                         return;
                     }
                 }
-                callback.onResponse(response);
+                if(callback!=null){
+                    callback.onResponse(response);
+                    callback.onFinish();
+                }
             }
         });
     }
@@ -287,7 +357,7 @@ public class OKHttpUtils<T>{
 //        });
 
 
-    public void post(String url,Map<String,String> params, Headers headers,String encodedKey, String encodedValue,Callback callback){
+    public void post(String url, Map<String,String> params, Headers headers, String encodedKey, String encodedValue, final Callback callback){
         FormEncodingBuilder formEncodingBuilder = new FormEncodingBuilder();
         if(params!=null && !params.isEmpty()){
             Set<String> keys = params.keySet();
@@ -303,41 +373,88 @@ public class OKHttpUtils<T>{
             requestBuilder.headers(headers);
         }
         requestBuilder.tag(url);
-        post(requestBuilder.build(),callback);
-    }
+        post(requestBuilder.build(),new Callback() {
+            @Override
+            public void onStart() {
+                if(callback!=null){
+                    callback.onStart();
+                }
+            }
 
-    public void post(String url, Map<String,String> params, Headers headers, String encodedKey, String encodedValue, final JsonCallBack jsonCallBack){
-        post(url, params, headers, encodedKey, encodedValue, new Callback() {
+            @Override
+            public void onFinish() {
+                if(callback!=null){
+                    callback.onFinish();
+                }
+            }
             @Override
             public void onFailure(Request request, IOException e) {
-                if(jsonCallBack!=null){
-                    jsonCallBack.onFailure(request,e);
+                if(callback!=null){
+                    callback.onFailure(request,e);
                 }
             }
 
             @Override
             public void onResponse(Response response) throws IOException {
-                if(response.isSuccessful() && jsonCallBack!=null){
+                if(response.isSuccessful() && callback!=null){
+                    callback.onResponse(response);
+                }else{
+                    callback.onFailure(null,new IOException("response is not successful"));
+                }
+            }
+        });
+    }
+
+    public void post(String url, Map<String,String> params, Headers headers, String encodedKey, String encodedValue, final JsonCallback callback){
+        post(url, params, headers, encodedKey, encodedValue, new Callback() {
+            @Override
+            public void onStart() {
+                if(callback!=null){
+                    callback.onStart();
+                }
+            }
+
+            @Override
+            public void onFinish() {
+                if(callback!=null){
+                    callback.onFinish();
+                }
+            }
+            @Override
+            public void onFailure(Request request, IOException e) {
+                if(callback!=null){
+                    callback.onFailure(request,e);
+                }
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                if(response.isSuccessful() && callback!=null){
                     String jsonString = response.body().string();;
                     if(!TextUtils.isEmpty(jsonString)){
                         Object result = null;
                         try {
-                            result =  gson.fromJson(jsonString,jsonCallBack.getType());
-                            jsonCallBack.onResponse(result);
+                            result =  gson.fromJson(jsonString,callback.getType());
+                            callback.onResponse(result);
                         } catch (JsonSyntaxException e) {
-                            jsonCallBack.onFailure(null,new Exception("json string parse error"));
+                            callback.onFailure(null,new Exception("json string parse error:"+e.toString()));
                             e.printStackTrace();
                         }
 
                     }else{
-                        jsonCallBack.onFailure(null,new Exception("json string may be null"));
+                        callback.onFailure(null,new Exception("json string may be null"));
                     }
+                }else{
+                    callback.onFailure(null,new Exception("response is not successful"));
                 }
             }
         });
     }
 
     public void post(Request request,Callback callback){
+        if(callback!=null){
+            callback.onStart();
+        }
         client.newCall(request).enqueue(callback);
     }
 
@@ -354,16 +471,16 @@ public class OKHttpUtils<T>{
         post(url, params, headers,null,null, callback);
     }
 
-    public void post(String url,JsonCallBack callback){
+    public void post(String url,JsonCallback callback){
         post(url,null,null,null,null,callback);
     }
-    public void post(String url,Map<String,String> params,JsonCallBack callback){
+    public void post(String url,Map<String,String> params,JsonCallback callback){
         post(url,params,null,null,null,callback);
     }
-    public void post(String url,Headers headers,JsonCallBack callback){
+    public void post(String url,Headers headers,JsonCallback callback){
         post(url,null,headers,null,null,callback);
     }
-    public void post(String url,Map<String,String> params, Headers headers,JsonCallBack callback){
+    public void post(String url,Map<String,String> params, Headers headers,JsonCallback callback){
         post(url, params, headers,null,null, callback);
     }
 
