@@ -1,5 +1,5 @@
 #＃ OKHttpUtils
-对OkHttp进行封装，实现了只查询缓存，网络请求失败自动查询本地缓存等功能
+对OkHttp进行封装，实现了只查询缓存，网络请求失败自动查询本地缓存等功能,结果用Gson解析
 支持4种不同的查询方式
 
 *ONLY_NETWORK  只查询网络数据
@@ -14,20 +14,23 @@
 
 #简单使用方法：
     okHttpUtils = new OKHttpUtils.Builder(this).build();
-    okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType ,new Callback() {
-            @Override
-            public void onFailure(Request request, IOException e) {
-                Log.d("failed",e.toString());
-            }
+    okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType,null, new JsonCallBack<DateModule>() {
+                @Override
+                public void onFailure(Request request, Exception e) {
 
-            @Override
-            public void onResponse(final Response response) throws IOException {
-                //  tv.setText(response.body().string());
-                Log.d("response", response.toString());
-                String str = response.body().string();
-                Log.d("response", str);
-            }
-        });
+                }
+
+                @Override
+                public void onResponse(final DateModule object) throws IOException {
+                    tv5.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            //tv5.setText(cacheType.name()+"  "+str);
+                            tv5.setText(object.getResult().getDatetime_2());
+                        }
+                    });
+                }
+            });
 
 #通过Builder初始化的方法
     okHttpUtils = new OKHttpUtils.Builder(this).cachedDir(getCacheDir()).maxCachedSize(5 * 1024 * 1024).cacheType(CacheType.CACHED_ELSE_NETWORK).maxCacheAge(60).build();
@@ -40,6 +43,9 @@
 
 #取消请求
 cancel(url)
+
+#添加回调
+调用的时候传入CallBack或JsonCallBack,JsonCallBack使用了Gson解析
 
 #more
 如果所提供的功能不满足需求，可通过getClient()获取到OKHttpClient来使用原生okhttp的功能

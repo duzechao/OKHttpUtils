@@ -1,19 +1,20 @@
 package git.dzc.okhttputils;
 
-import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
+import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import com.google.gson.Gson;
 import com.squareup.okhttp.Callback;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.Response;
 
-import java.io.File;
 import java.io.IOException;
 
 import git.dzc.okhttputilslib.CacheType;
+import git.dzc.okhttputilslib.JsonCallBack;
 import git.dzc.okhttputilslib.OKHttpUtils;
 
 public class MainActivity extends AppCompatActivity {
@@ -25,6 +26,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv5;
 
     private OKHttpUtils okHttpUtils;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -70,31 +72,25 @@ public class MainActivity extends AppCompatActivity {
 
 
     private void getData(final CacheType cacheType){
-        okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType ,new Callback() {
+        okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType,null, new JsonCallBack<DateModule>() {
             @Override
-            public void onFailure(Request request, final IOException e) {
-                Log.d("failed",e.toString());
-                tv5.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        tv5.setText(cacheType.name()+"  "+e.toString());
-                    }
-                });
+            public void onFailure(Request request, Exception e) {
+
             }
 
             @Override
-            public void onResponse(final Response response) throws IOException {
-                //  tv.setText(response.body().string());
-                Log.d("response", response.toString());
-                final String str = response.body().string();
-                Log.d("response", str);
+            public void onResponse(final DateModule object) throws IOException {
                 tv5.post(new Runnable() {
                     @Override
                     public void run() {
-                        tv5.setText(cacheType.name()+"  "+str);
+                        //tv5.setText(cacheType.name()+"  "+str);
+                        tv5.setText(object.getResult().getDatetime_2());
                     }
                 });
             }
         });
     }
+
+
+
 }

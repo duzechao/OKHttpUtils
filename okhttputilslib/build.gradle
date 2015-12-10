@@ -23,4 +23,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
     compile 'com.android.support:appcompat-v7:22.2.0'
     compile 'com.squareup.okhttp:okhttp:2.6.0'
+    compile 'com.google.code.gson:gson:2.5'
 }

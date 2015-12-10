@@ -4,6 +4,8 @@ import android.content.Context;
 import android.text.TextUtils;
 import android.util.Log;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.CacheControl;
 import com.squareup.okhttp.Callback;
@@ -23,9 +25,10 @@ import java.util.Set;
 /**
  * Created by dzc on 15/11/8.
  */
-public class OKHttpUtils {
+public class OKHttpUtils<T>{
     private boolean DEBUG = true;
     private OkHttpClient client = null;
+    private Gson gson;
 
     public  OkHttpClient getClient(){
         return client;
@@ -35,6 +38,7 @@ public class OKHttpUtils {
     }
     private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge,CacheType cacheType ,List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors){
         client = new OkHttpClient();
+        gson = new Gson();
         if(cachedDir!=null){
             client.setCache(new Cache(cachedDir,maxCacheSize));
         }else{
@@ -74,6 +78,47 @@ public class OKHttpUtils {
         get(url, cacheType,null, callback);
     }
 
+    public void get(String url,JsonCallBack callback){
+        get(url,CacheType.NETWORK_ELSE_CACHED,null,callback);
+    }
+
+    public void get(String url,Headers headers,JsonCallBack callback){
+        get(url,CacheType.NETWORK_ELSE_CACHED,headers,callback);
+    }
+    public void get(String url,CacheType cacheType,JsonCallBack callback){
+        get(url, cacheType,null, callback);
+    }
+
+    public void get(final String url, final CacheType cacheType, final Headers headers , final JsonCallBack jsonCallBack){
+        get(url, cacheType, headers, new Callback() {
+            @Override
+            public void onFailure(Request request, IOException e) {
+                if(jsonCallBack!=null){
+                    jsonCallBack.onFailure(request,e);
+                }
+            }
+
+            @Override
+            public void onResponse(Response response) throws IOException {
+                if(response.isSuccessful() && jsonCallBack!=null){
+                    String jsonString = response.body().string();;
+                    if(!TextUtils.isEmpty(jsonString)){
+                        Object result = null;
+                        try {
+                            result =  gson.fromJson(jsonString,jsonCallBack.getType());
+                            jsonCallBack.onResponse(result);
+                        } catch (JsonSyntaxException e) {
+                            jsonCallBack.onFailure(null,new Exception("json string parse error"));
+                            e.printStackTrace();
+                        }
+
+                    }else{
+                        jsonCallBack.onFailure(null,new Exception("json string may be null"));
+                    }
+                }
+            }
+        });
+    }
 
     public void get(final String url, final CacheType cacheType, final Headers headers, final Callback callback){
         switch (cacheType){
