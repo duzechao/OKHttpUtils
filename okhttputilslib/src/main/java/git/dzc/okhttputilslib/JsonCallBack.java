@@ -13,7 +13,6 @@ import java.lang.reflect.Type;
  */
 public abstract class JsonCallback<T> {
     public abstract void onFailure(Request request, Exception e);
-
     public abstract void onResponse(T object) throws IOException;
 
     public void onStart(){

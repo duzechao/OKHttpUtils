@@ -13,6 +13,7 @@ import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.Interceptor;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
+import com.squareup.okhttp.RequestBody;
 import com.squareup.okhttp.Response;
 
 import java.io.File;
@@ -25,9 +26,12 @@ import java.util.Set;
  * Created by dzc on 15/11/8.
  */
 public class OKHttpUtils<T>{
+    public static final String GET = "GET";
+    public static final String POST = "POST";
     private boolean DEBUG = true;
     private OkHttpClient client = null;
     private Gson gson;
+    private CacheType cacheType = CacheType.ONLY_NETWORK;
 
     public  OkHttpClient getClient(){
         return client;
@@ -35,9 +39,10 @@ public class OKHttpUtils<T>{
 
     private OKHttpUtils() {
     }
-    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge,CacheType cacheType ,List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors){
+    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge, CacheType cacheType , List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors){
         client = new OkHttpClient();
         gson = new Gson();
+        this.cacheType = cacheType;
         if(cachedDir!=null){
             client.setCache(new Cache(cachedDir,maxCacheSize));
         }else{
@@ -65,31 +70,80 @@ public class OKHttpUtils<T>{
         return  new Builder(context).build();
     }
 
+    public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
 
-    public void get(String url,Callback callback){
-        get(url,CacheType.NETWORK_ELSE_CACHED,null,callback);
+        request(url,cacheType,POST,createRequestBody(params),headers,callback);
+    }
+    public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
+
+        request(url,cacheType,POST,createRequestBody(params),headers,callback);
+    }
+    public void post(final String url,CacheType cacheType, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
+
+        request(url,cacheType,POST,createRequestBody(params),null,callback);
+    }
+    public void post(final String url,Headers headers, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
+
+        request(url,cacheType,POST,createRequestBody(params),headers,callback);
+    }
+    public void post(final String url, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
+
+        request(url,cacheType,POST,createRequestBody(params),headers,callback);
+    }
+    public void post(final String url, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
+
+        request(url,cacheType,POST,createRequestBody(params),null,callback);
+    }
+    public void post(final String url,CacheType cacheType, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
+
+        request(url,cacheType,POST,createRequestBody(params),null,callback);
+    }
+    public void get(final String url, Headers headers,Callback callback){
+        request(url,cacheType,GET,null,headers,callback);
+    }
+    public void get(final String url, Headers headers, JsonCallback callback){
+        request(url,cacheType,GET,null,headers,callback);
+    }
+    public void get(final String url,Callback callback){
+        request(url,cacheType,GET,null,null,callback);
+    }
+    public void get(final String url,JsonCallback callback){
+        request(url,cacheType,GET,null,null,callback);
+    }
+    public void get(final String url,CacheType cacheType, Headers headers,Callback callback){
+        request(url,cacheType,GET,null,headers,callback);
+    }
+    public void get(final String url,CacheType cacheType, Headers headers, JsonCallback callback){
+        request(url,cacheType,GET,null,headers,callback);
+    }
+    public void get(final String url,CacheType cacheType,Callback callback){
+        request(url,cacheType,GET,null,null,callback);
+    }
+    public void get(final String url,CacheType cacheType,JsonCallback callback){
+        request(url,cacheType,GET,null,null,callback);
     }
 
-    public void get(String url,Headers headers,Callback callback){
-        get(url,CacheType.NETWORK_ELSE_CACHED,headers,callback);
+    public static RequestBody createRequestBody(Map<String,String> params,String encodedKey,String encodedValue){
+        FormEncodingBuilder formEncodingBuilder = new FormEncodingBuilder();
+        if(params!=null&&!params.isEmpty()){
+            Set<String> keys = params.keySet();
+            for(String key:keys){
+                formEncodingBuilder.add(key,params.get(key));
+            }
+        }
+        if(!TextUtils.isEmpty(encodedKey) && !TextUtils.isEmpty(encodedValue)){
+            formEncodingBuilder.addEncoded(encodedKey,encodedValue);
+        }
+        return formEncodingBuilder.build();
     }
-    public void get(String url,CacheType cacheType,Callback callback){
-        get(url, cacheType,null, callback);
+    public static RequestBody createRequestBody(Map<String,String> params){
+        return createRequestBody(params,null,null);
     }
 
-    public void get(String url,JsonCallback callback){
-        get(url,CacheType.NETWORK_ELSE_CACHED,null,callback);
-    }
 
-    public void get(String url,Headers headers,JsonCallback callback){
-        get(url,CacheType.NETWORK_ELSE_CACHED,headers,callback);
-    }
-    public void get(String url,CacheType cacheType,JsonCallback callback){
-        get(url, cacheType,null, callback);
-    }
 
-    public void get(final String url, final CacheType cacheType, final Headers headers , final JsonCallback callback){
-        get(url, cacheType, headers, new Callback() {
+    public void request(final String url, final CacheType cacheType, final String method, final RequestBody requestBody, final Headers headers,final JsonCallback callback){
+        request(url,cacheType, method,requestBody, headers, new Callback() {
             @Override
             public void onStart() {
                 if(callback!=null){
@@ -131,17 +185,17 @@ public class OKHttpUtils<T>{
         });
     }
 
-    public void get(final String url, final CacheType cacheType, final Headers headers, final Callback callback){
+    public void request(final String url, final CacheType cacheType, final String method, final RequestBody requestBody, final Headers headers, final Callback callback){
         if(callback!=null)callback.onStart();
         switch (cacheType){
             case ONLY_NETWORK:
-                getDataFromNetwork(url,headers,callback);
+                requestFromNetwork(url,method,requestBody,headers,callback);
                 break;
             case ONLY_CACHED:
-                getDataFromCached(url,headers,callback);
+                requestFromCached(url,method,requestBody,headers,callback);
                 break;
             case CACHED_ELSE_NETWORK:
-                getDataFromCached(url,headers, new Callback() {
+                requestFromCached(url,method,requestBody,headers, new Callback() {
                     @Override
                     public void onStart() {
                         if(callback!=null){
@@ -158,7 +212,7 @@ public class OKHttpUtils<T>{
 
                     @Override
                     public void onFailure(Request request, IOException e) {
-                        getDataFromNetwork(url,headers,callback);
+                        requestFromNetwork(url,method,requestBody,headers,callback);
                     }
 
                     @Override
@@ -169,13 +223,13 @@ public class OKHttpUtils<T>{
                                 callback.onFinish();
                             }
                         }else{
-                            getDataFromNetwork(url,headers,callback);
+                            requestFromNetwork(url,method,requestBody,headers,callback);
                         }
                     }
                 });
                 break;
             case NETWORK_ELSE_CACHED:
-                getDataFromNetwork(url,headers, new Callback() {
+                requestFromNetwork(url,method,requestBody,headers, new Callback() {
                     @Override
                     public void onStart() {
                         if(callback!=null){
@@ -192,7 +246,7 @@ public class OKHttpUtils<T>{
 
                     @Override
                     public void onFailure(Request request, IOException e) {
-                        getDataFromCached(url,headers,callback);
+                        requestFromCached(url,method,requestBody,headers,callback);
                     }
 
                     @Override
@@ -203,7 +257,7 @@ public class OKHttpUtils<T>{
                                 callback.onFinish();
                             }
                         }else{
-                            getDataFromCached(url,headers,callback);
+                            requestFromCached(url,method,requestBody,headers,callback);
                         }
                     }
                 });
@@ -211,24 +265,26 @@ public class OKHttpUtils<T>{
         }
     }
 
-    public void getDataFromNetwork(final String url, Headers headers,final Callback callback){
+    public void requestFromNetwork(final String url,String method,RequestBody requestBody, Headers headers,final Callback callback){
         Log.d("httpUtils","getDataFromNetwork");
-        getData(url,CacheControl.FORCE_NETWORK,headers,callback);
+        request(url,method,requestBody,CacheControl.FORCE_NETWORK,headers,callback);
     }
 
-    public void getDataFromCached(String url,Headers headers ,final Callback callback){
+    public void requestFromCached(String url,String method,RequestBody requestBody,Headers headers ,final Callback callback){
         Log.d("httpUtils","getDataFromCached");
-        getData(url,CacheControl.FORCE_CACHE,headers,callback);
+        request(url,method,requestBody,CacheControl.FORCE_CACHE,headers,callback);
     }
 
-    public void getData(String url, final CacheControl cacheControl, Headers headers, final Callback callback){
+    private void request(String url, String method, RequestBody requestBody, final CacheControl cacheControl, Headers headers, final Callback callback){
         final Request.Builder requestBuilder = new Request.Builder().url(url).cacheControl(cacheControl);
         if(headers!=null){
             requestBuilder.headers(headers);
         }
+        requestBuilder.method(method,requestBody);
         requestBuilder.tag(url);
+
         final Request request = requestBuilder.build();
-        getData(request,new Callback() {
+        request(request,new Callback() {
 
             @Override
             public void onStart() {
@@ -270,7 +326,9 @@ public class OKHttpUtils<T>{
             }
         });
     }
-    public void getData(Request request,Callback callback){
+
+
+    private void request(Request request, Callback callback){
         client.newCall(request).enqueue(callback);
     }
 
@@ -357,132 +415,7 @@ public class OKHttpUtils<T>{
 //        });
 
 
-    public void post(String url, Map<String,String> params, Headers headers, String encodedKey, String encodedValue, final Callback callback){
-        FormEncodingBuilder formEncodingBuilder = new FormEncodingBuilder();
-        if(params!=null && !params.isEmpty()){
-            Set<String> keys = params.keySet();
-            for(String key:keys){
-                formEncodingBuilder.add(key,params.get(key));
-            }
-        }
-        if(!TextUtils.isEmpty(encodedKey) && !TextUtils.isEmpty(encodedValue)){
-            formEncodingBuilder.addEncoded(encodedKey,encodedValue);
-        }
-        Request.Builder requestBuilder = new Request.Builder().url(url).post(formEncodingBuilder.build());
-        if(headers!=null){
-            requestBuilder.headers(headers);
-        }
-        requestBuilder.tag(url);
-        post(requestBuilder.build(),new Callback() {
-            @Override
-            public void onStart() {
-                if(callback!=null){
-                    callback.onStart();
-                }
-            }
 
-            @Override
-            public void onFinish() {
-                if(callback!=null){
-                    callback.onFinish();
-                }
-            }
-            @Override
-            public void onFailure(Request request, IOException e) {
-                if(callback!=null){
-                    callback.onFailure(request,e);
-                }
-            }
-
-            @Override
-            public void onResponse(Response response) throws IOException {
-                if(response.isSuccessful() && callback!=null){
-                    callback.onResponse(response);
-                }else{
-                    callback.onFailure(null,new IOException("response is not successful"));
-                }
-            }
-        });
-    }
-
-    public void post(String url, Map<String,String> params, Headers headers, String encodedKey, String encodedValue, final JsonCallback callback){
-        post(url, params, headers, encodedKey, encodedValue, new Callback() {
-            @Override
-            public void onStart() {
-                if(callback!=null){
-                    callback.onStart();
-                }
-            }
-
-            @Override
-            public void onFinish() {
-                if(callback!=null){
-                    callback.onFinish();
-                }
-            }
-            @Override
-            public void onFailure(Request request, IOException e) {
-                if(callback!=null){
-                    callback.onFailure(request,e);
-                }
-            }
-
-            @Override
-            public void onResponse(Response response) throws IOException {
-                if(response.isSuccessful() && callback!=null){
-                    String jsonString = response.body().string();;
-                    if(!TextUtils.isEmpty(jsonString)){
-                        Object result = null;
-                        try {
-                            result =  gson.fromJson(jsonString,callback.getType());
-                            callback.onResponse(result);
-                        } catch (JsonSyntaxException e) {
-                            callback.onFailure(null,new Exception("json string parse error:"+e.toString()));
-                            e.printStackTrace();
-                        }
-
-                    }else{
-                        callback.onFailure(null,new Exception("json string may be null"));
-                    }
-                }else{
-                    callback.onFailure(null,new Exception("response is not successful"));
-                }
-            }
-        });
-    }
-
-    public void post(Request request,Callback callback){
-        if(callback!=null){
-            callback.onStart();
-        }
-        client.newCall(request).enqueue(callback);
-    }
-
-    public void post(String url,Callback callback){
-        post(url,null,null,null,null,callback);
-    }
-    public void post(String url,Map<String,String> params,Callback callback){
-        post(url,params,null,null,null,callback);
-    }
-    public void post(String url,Headers headers,Callback callback){
-        post(url,null,headers,null,null,callback);
-    }
-    public void post(String url,Map<String,String> params, Headers headers,Callback callback){
-        post(url, params, headers,null,null, callback);
-    }
-
-    public void post(String url,JsonCallback callback){
-        post(url,null,null,null,null,callback);
-    }
-    public void post(String url,Map<String,String> params,JsonCallback callback){
-        post(url,params,null,null,null,callback);
-    }
-    public void post(String url,Headers headers,JsonCallback callback){
-        post(url,null,headers,null,null,callback);
-    }
-    public void post(String url,Map<String,String> params, Headers headers,JsonCallback callback){
-        post(url, params, headers,null,null, callback);
-    }
 
     /**
      * 通过url来取消一个请求  如果使用自定义的Request,传入request的Tag为url才能有效

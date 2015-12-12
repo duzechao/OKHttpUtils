@@ -10,7 +10,7 @@
 
 *NETWORK_ELSE_CACHED  先查询网络数据，如果没有，再查询本地缓存
 
-目前支持缓存部分只支持get请求，默认查询方式为NETWORK_ELSE_CACHED，可通过Builder来指定默认查询方式
+支持get和post请求，默认查询方式为NETWORK_ELSE_CACHED，可通过Builder来指定默认查询方式
 
 #简单使用方法：
     okHttpUtils = new OKHttpUtils.Builder(this).build();
@@ -46,6 +46,8 @@
                 }
             });
 
+#高级使用方法
+如果提供的get和post方法不满足需求，可调用request方法来实现需求
 #通过Builder初始化的方法
     okHttpUtils = new OKHttpUtils.Builder(this).cachedDir(getCacheDir()).maxCachedSize(5 * 1024 * 1024).cacheType(CacheType.CACHED_ELSE_NETWORK).maxCacheAge(60).build();
 来配置默认的配置
