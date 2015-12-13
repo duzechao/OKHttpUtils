@@ -61,7 +61,7 @@
 cancel(url)
 
 #添加回调
-调用的时候传入CallBack或JsonCallBack,JsonCallBack使用了Gson解析,JsonCallBack<DateModule>或JsonCallBack<List<DateModule>>来解析当个module或一个list，支持List<Map<Object,Object>等
+    调用的时候传入CallBack或JsonCallBack,JsonCallBack使用了Gson解析,JsonCallBack<DateModule>或JsonCallBack<List<DateModule>>来解析当个module或一个list，支持List<Map<Object,Object>等
 
 #more
 如果所提供的功能不满足需求，可通过getClient()获取到OKHttpClient来使用原生okhttp的功能
