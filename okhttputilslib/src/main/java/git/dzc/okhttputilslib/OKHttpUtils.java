@@ -8,9 +8,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import com.squareup.okhttp.Cache;
 import com.squareup.okhttp.CacheControl;
+import com.squareup.okhttp.Call;
 import com.squareup.okhttp.FormEncodingBuilder;
 import com.squareup.okhttp.Headers;
 import com.squareup.okhttp.Interceptor;
+import com.squareup.okhttp.MediaType;
+import com.squareup.okhttp.MultipartBuilder;
 import com.squareup.okhttp.OkHttpClient;
 import com.squareup.okhttp.Request;
 import com.squareup.okhttp.RequestBody;
@@ -21,6 +24,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import okio.Buffer;
+import okio.BufferedSink;
+import okio.Okio;
+import okio.Source;
 
 /**
  * Created by dzc on 15/11/8.
@@ -417,6 +425,8 @@ public class OKHttpUtils<T>{
 
 
 
+
+
     /**
      * 通过url来取消一个请求  如果使用自定义的Request,传入request的Tag为url才能有效
      * @param url
@@ -427,6 +437,60 @@ public class OKHttpUtils<T>{
         } catch (Exception e) {
 //            e.printStackTrace();
         }
+    }
+
+
+
+    public Call uploadFile(String url, File file, Headers headers, UploadListener uploadListener){
+
+        MultipartBuilder multipartBuilder = new MultipartBuilder();
+
+        if(headers!=null){
+            multipartBuilder.addPart(headers,createUploadRequestBody(MultipartBuilder.FORM,file,uploadListener));
+        }else{
+            multipartBuilder.addPart(createUploadRequestBody(MultipartBuilder.FORM,file,uploadListener));
+        }
+        Request request = new Request.Builder()
+                .url(url)
+                .post(multipartBuilder.build())
+                .build();
+        Call call = client.newCall(request);
+        call.enqueue(uploadListener);
+        return call;
+
+    }
+
+    //参考自 http://blog.csdn.net/djk_dong/article/details/48179315
+    public RequestBody createUploadRequestBody(final MediaType contentType, final File file, final UploadListener listener) {
+        return new RequestBody() {
+            @Override
+            public MediaType contentType() {
+                return contentType;
+            }
+
+            @Override
+            public long contentLength() {
+                return file.length();
+            }
+
+            @Override
+            public void writeTo(BufferedSink sink) throws IOException {
+                Source source;
+                try {
+                    source = Okio.source(file);
+                    Buffer buf = new Buffer();
+                    long remaining = contentLength();
+                    for (long readCount; (readCount = source.read(buf, 2048)) != -1; ) {
+                        sink.write(buf, readCount);
+                        if(listener!=null){
+                            listener.onProgress(contentLength(), remaining -= readCount);
+                        }
+                    }
+                } catch (Exception e) {
+//                    e.printStackTrace();
+                }
+            }
+        };
     }
 
 }

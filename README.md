@@ -1,5 +1,6 @@
 #＃ OKHttpUtils
 对OkHttp进行封装，实现了只查询缓存，网络请求失败自动查询本地缓存等功能,结果用Gson解析
+支持文件上传进度回调
 支持4种不同的查询方式
 
 *ONLY_NETWORK  只查询网络数据
@@ -13,6 +14,8 @@
 支持get和post请求，默认查询方式为NETWORK_ELSE_CACHED，可通过Builder来指定默认查询方式
 
 #简单使用方法：
+ 1.get请求，post请求同理
+
     okHttpUtils = new OKHttpUtils.Builder(this).build();
     okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType,null, new JsonCallback<DateModule>() {
     
@@ -46,6 +49,10 @@
                 }
             });
 
+ 2.上传文件
+    
+    uploadFile(String url, File file, Headers headers, UploadListener uploadListener)//heads如果没有 可传null
+    
 #高级使用方法
 如果提供的get和post方法不满足需求，可调用request方法来实现需求
 #通过Builder初始化的方法
