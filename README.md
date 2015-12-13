@@ -4,6 +4,7 @@
 
 对OkHttp进行封装，实现了只查询缓存，网络请求失败自动查询本地缓存等功能,结果用Gson解析
 支持文件上传进度回调
+支持gzip,可通过gzip(isOpen)来开启或移除，也可通过在Builder自定义的时候开启
 支持4种不同的查询方式
 
 *ONLY_NETWORK  只查询网络数据
@@ -55,6 +56,11 @@
  2.上传文件
     
     uploadFile(String url, File file, Headers headers, UploadListener uploadListener)//heads如果没有 可传null
+    
+ 3.自定义client
+    
+    okHttpUtils = new OKHttpUtils.Builder(this).cachedDir(cacheDir).cacheType(CacheType.ONLY_NETWORK).gzip(true).maxCacheAge(60 *60).maxCachedSize(1024*10).build();
+
     
 #高级使用方法
 如果提供的get和post方法不满足需求，可调用request方法来实现需求

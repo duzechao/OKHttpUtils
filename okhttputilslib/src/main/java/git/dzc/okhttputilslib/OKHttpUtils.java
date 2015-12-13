@@ -27,6 +27,7 @@ import java.util.Set;
 
 import okio.Buffer;
 import okio.BufferedSink;
+import okio.GzipSink;
 import okio.Okio;
 import okio.Source;
 
@@ -44,10 +45,11 @@ public class OKHttpUtils<T>{
     public  OkHttpClient getClient(){
         return client;
     }
+    private GzipRequestInterceptor gzipRequestInterceptor = new GzipRequestInterceptor();
 
     private OKHttpUtils() {
     }
-    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge, CacheType cacheType , List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors){
+    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge, CacheType cacheType , List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors,boolean isGzip){
         client = new OkHttpClient();
         gson = new Gson();
         this.cacheType = cacheType;
@@ -65,6 +67,11 @@ public class OKHttpUtils<T>{
                         .build();
             }
         };
+        if(isGzip){
+            if(!client.interceptors().contains(gzipRequestInterceptor)){
+                client.interceptors().add(new GzipRequestInterceptor());
+            }
+        }
         client.networkInterceptors().add(cacheInterceptor);
         if(netWorkinterceptors!=null && !netWorkinterceptors.isEmpty()){
             client.networkInterceptors().addAll(netWorkinterceptors);
@@ -352,6 +359,7 @@ public class OKHttpUtils<T>{
         private List<Interceptor> interceptors;
         private int maxCacheAge = 3600 * 12;
         private CacheType cacheType = CacheType.NETWORK_ELSE_CACHED;
+        private boolean isGzip = false;
 
 
         public Builder(Context context) {
@@ -362,7 +370,12 @@ public class OKHttpUtils<T>{
         }
 
         public OKHttpUtils build(){
-            return new OKHttpUtils(context,maxCachedSize,cachedDir,maxCacheAge,cacheType,networkInterceptors,interceptors);
+            return new OKHttpUtils(context,maxCachedSize,cachedDir,maxCacheAge,cacheType,networkInterceptors,interceptors,isGzip);
+        }
+
+        public Builder gzip(boolean openGzip) {
+            this.isGzip = openGzip;
+            return this;
         }
 
         public Builder cacheType(CacheType cacheType){
@@ -375,10 +388,6 @@ public class OKHttpUtils<T>{
             return this;
         }
 
-        public Builder context(Context context) {
-            this.context = context;
-            return this;
-        }
 
         /**
          * 拦截器使用可参考这篇文章  <a href="http://www.tuicool.com/articles/Uf6bAnz">http://www.tuicool.com/articles/Uf6bAnz</a>
@@ -491,6 +500,51 @@ public class OKHttpUtils<T>{
                 }
             }
         };
+    }
+
+    static class GzipRequestInterceptor implements Interceptor {
+        @Override public Response intercept(Chain chain) throws IOException {
+            Request originalRequest = chain.request();
+            if (originalRequest.body() == null || originalRequest.header("Content-Encoding") != null) {
+                return chain.proceed(originalRequest);
+            }
+
+            Request compressedRequest = originalRequest.newBuilder()
+                    .header("Content-Encoding", "gzip")
+                    .method(originalRequest.method(), gzip(originalRequest.body()))
+                    .build();
+            return chain.proceed(compressedRequest);
+        }
+
+        private RequestBody gzip(final RequestBody body) {
+            return new RequestBody() {
+                @Override public MediaType contentType() {
+                    return body.contentType();
+                }
+
+                @Override public long contentLength() {
+                    return -1; // We don't know the compressed length in advance!
+                }
+
+                @Override public void writeTo(BufferedSink sink) throws IOException {
+                    BufferedSink gzipSink = Okio.buffer(new GzipSink(sink));
+                    body.writeTo(gzipSink);
+                    gzipSink.close();
+                }
+            };
+        }
+    }
+
+    public void gzip(boolean open){
+        if(open){
+            if(!client.interceptors().contains(gzipRequestInterceptor)){
+                client.interceptors().add(gzipRequestInterceptor);
+            }
+        }else{
+            if(client.interceptors().contains(gzipRequestInterceptor)){
+                client.interceptors().remove(gzipRequestInterceptor);
+            }
+        }
     }
 
 }
