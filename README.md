@@ -1,4 +1,7 @@
 #＃ OKHttpUtils
+
+#如果需要文件下载，请看这个库[DownloadManager](https://github.com/duzechao/DownloadManager)
+
 对OkHttp进行封装，实现了只查询缓存，网络请求失败自动查询本地缓存等功能,结果用Gson解析
 支持文件上传进度回调
 支持4种不同的查询方式
@@ -55,6 +58,7 @@
     
 #高级使用方法
 如果提供的get和post方法不满足需求，可调用request方法来实现需求
+
 #通过Builder初始化的方法
     okHttpUtils = new OKHttpUtils.Builder(this).cachedDir(getCacheDir()).maxCachedSize(5 * 1024 * 1024).cacheType(CacheType.CACHED_ELSE_NETWORK).maxCacheAge(60).build();
 来配置默认的配置
