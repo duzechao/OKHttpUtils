@@ -1,3 +1,4 @@
+/okhttputilslib/project.properties
 *.iml
 .gradle
 /local.properties
@@ -7,3 +8,4 @@
 /build
 /captures
 /.idea
+/okhttputilslib/local.properties
