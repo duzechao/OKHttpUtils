@@ -17,6 +17,15 @@
 
 支持get和post请求，默认查询方式为NETWORK_ELSE_CACHED，可通过Builder来指定默认查询方式
 
+#Android Studio
+compile('git.dzc:okhttputilslib:1.0@aar')
+如果找不到,在build.gradle加入
+repositories {
+    mavenCentral()
+    jcenter()
+}
+
+
 #简单使用方法：
  1.get请求，post请求同理
 

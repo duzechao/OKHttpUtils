@@ -535,6 +535,7 @@ public class OKHttpUtils<T>{
         }
     }
 
+
     public void gzip(boolean open){
         if(open){
             if(!client.interceptors().contains(gzipRequestInterceptor)){
