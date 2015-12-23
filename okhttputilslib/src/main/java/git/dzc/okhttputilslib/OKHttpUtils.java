@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import okio.Buffer;
 import okio.BufferedSink;
@@ -49,7 +50,7 @@ public class OKHttpUtils<T>{
 
     private OKHttpUtils() {
     }
-    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge, CacheType cacheType , List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors,boolean isGzip){
+    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge, CacheType cacheType , List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors,boolean isGzip,long timeOut){
         client = new OkHttpClient();
         gson = new Gson();
         this.cacheType = cacheType;
@@ -79,6 +80,7 @@ public class OKHttpUtils<T>{
         if(interceptors!=null && !interceptors.isEmpty()){
             client.interceptors().addAll(interceptors);
         }
+        client.setConnectTimeout(timeOut, TimeUnit.MILLISECONDS);
     }
 
     public OKHttpUtils initDefault(Context context){
@@ -112,6 +114,14 @@ public class OKHttpUtils<T>{
     public void post(final String url,CacheType cacheType, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
 
         request(url,cacheType,POST,createRequestBody(params),null,callback);
+    }
+
+    public void post(String url,JsonCallback callback){
+        request(url,cacheType,POST,null,null,callback);
+    }
+
+    public void post(String url,Callback callback){
+        request(url,cacheType,POST,null,null,callback);
     }
     public void get(final String url, Headers headers,Callback callback){
         request(url,cacheType,GET,null,headers,callback);
@@ -281,12 +291,10 @@ public class OKHttpUtils<T>{
     }
 
     public void requestFromNetwork(final String url,String method,RequestBody requestBody, Headers headers,final Callback callback){
-        Log.d("httpUtils","getDataFromNetwork");
         request(url,method,requestBody,CacheControl.FORCE_NETWORK,headers,callback);
     }
 
     public void requestFromCached(String url,String method,RequestBody requestBody,Headers headers ,final Callback callback){
-        Log.d("httpUtils","getDataFromCached");
         request(url,method,requestBody,CacheControl.FORCE_CACHE,headers,callback);
     }
 
@@ -360,6 +368,7 @@ public class OKHttpUtils<T>{
         private int maxCacheAge = 3600 * 12;
         private CacheType cacheType = CacheType.NETWORK_ELSE_CACHED;
         private boolean isGzip = false;
+        private long timeOut = 5000;
 
 
         public Builder(Context context) {
@@ -370,7 +379,12 @@ public class OKHttpUtils<T>{
         }
 
         public OKHttpUtils build(){
-            return new OKHttpUtils(context,maxCachedSize,cachedDir,maxCacheAge,cacheType,networkInterceptors,interceptors,isGzip);
+            return new OKHttpUtils(context,maxCachedSize,cachedDir,maxCacheAge,cacheType,networkInterceptors,interceptors,isGzip,timeOut);
+        }
+
+        public Builder timeOut(long timeOut){
+            this.timeOut = timeOut;
+            return this;
         }
 
         public Builder gzip(boolean openGzip) {
