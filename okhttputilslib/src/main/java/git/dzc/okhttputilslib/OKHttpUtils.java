@@ -89,30 +89,37 @@ public class OKHttpUtils<T>{
 
     public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
 
-        request(url,cacheType,POST,createRequestBody(params),headers,callback);
+        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),headers,callback);
     }
     public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
 
-        request(url,cacheType,POST,createRequestBody(params),headers,callback);
+        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),headers,callback);
     }
     public void post(final String url,CacheType cacheType, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
 
-        request(url,cacheType,POST,createRequestBody(params),null,callback);
+        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),null,callback);
     }
     public void post(final String url,Headers headers, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
 
-        request(url,cacheType,POST,createRequestBody(params),headers,callback);
+        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),headers,callback);
     }
     public void post(final String url, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
 
-        request(url,cacheType,POST,createRequestBody(params),headers,callback);
+        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),headers,callback);
     }
     public void post(final String url, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
 
-        request(url,cacheType,POST,createRequestBody(params),null,callback);
+        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),null,callback);
     }
     public void post(final String url,CacheType cacheType, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
 
+        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),null,callback);
+    }
+    public void post(String url, Map<String,String> params,JsonCallback callback){
+        request(url,cacheType,POST,createRequestBody(params),null,callback);
+    }
+
+    public void post(String url, Map<String,String> params,Callback callback){
         request(url,cacheType,POST,createRequestBody(params),null,callback);
     }
 
