@@ -4,7 +4,8 @@
 
 对OkHttp进行封装，实现了只查询缓存，网络请求失败自动查询本地缓存等功能,结果用Gson解析
 支持文件上传进度回调
-支持gzip,可通过gzip(isOpen)来开启或移除，也可通过在Builder自定义的时候开启
+<br/>支持gzip,可通过gzip(isOpen)来开启或移除，也可通过在Builder自定义的时候开启(由于okhttp默认开启了gzip,
+<br/>所以此选项是对发送到服务器的数据进行gzip,如果服务器不支持,请勿开启)
 支持4种不同的查询方式
 
 *ONLY_NETWORK  只查询网络数据
@@ -18,7 +19,7 @@
 支持get和post请求，默认查询方式为NETWORK_ELSE_CACHED，可通过Builder来指定默认查询方式
 
 #Android Studio
-compile('git.dzc:okhttputilslib:1.0@aar')
+compile('git.dzc:okhttputilslib:1.0.4')
 如果找不到,在build.gradle加入
 repositories {
     mavenCentral()
@@ -30,15 +31,13 @@ repositories {
  1.get请求，post请求同理
 
     okHttpUtils = new OKHttpUtils.Builder(this).build();
-    okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType,null, new JsonCallback<DateModule>() {
+    okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType, MainActivity.this,new JsonCallback<DateModule>() {
     
-                //请求开始回调
                 @Override
                 public void onStart() {
                     Log.d(TAG,"onStart");
                 }
     
-                //请求结束回调  在onFailure或onRsponse后回调
                 @Override
                 public void onFinish() {
                     Log.d(TAG,"onFinish");
@@ -55,13 +54,11 @@ repositories {
                     tv5.post(new Runnable() {
                         @Override
                         public void run() {
-                            //tv5.setText(cacheType.name()+"  "+str);
                             tv5.setText(object.getResult().getDatetime_2());
                         }
                     });
                 }
             });
-
  2.上传文件
     
     uploadFile(String url, File file, Headers headers, UploadListener uploadListener)//heads如果没有 可传null
@@ -84,7 +81,10 @@ repositories {
 拦截器的使用说明请参考这篇文章 [http://www.tuicool.com/articles/Uf6bAnz](http://www.tuicool.com/articles/Uf6bAnz)
 
 #取消请求
-cancel(url)
+*取消单个请求 cancel(url)
+
+*通过将Activity作为tag传进方法,可在Activity的onDestroy方法取消所有请求
+<br/><br/>(注意,一旦传入tag,通过url取消请求将会无效)
 
 #添加回调
     调用的时候传入CallBack或JsonCallBack,JsonCallBack使用了Gson解析,JsonCallBack<DateModule>或JsonCallBack<List<DateModule>>来解析当个module或一个list，支持List<Map<Object,Object>等

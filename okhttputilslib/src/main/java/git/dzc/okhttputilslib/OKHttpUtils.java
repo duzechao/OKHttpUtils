@@ -42,6 +42,7 @@ public class OKHttpUtils<T>{
     private OkHttpClient client = null;
     private Gson gson;
     private CacheType cacheType = CacheType.ONLY_NETWORK;
+    private MediaType mediaType = MultipartBuilder.FORM;
 
     public  OkHttpClient getClient(){
         return client;
@@ -50,9 +51,10 @@ public class OKHttpUtils<T>{
 
     private OKHttpUtils() {
     }
-    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge, CacheType cacheType , List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors,boolean isGzip,long timeOut){
+    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge, CacheType cacheType , List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors,boolean isGzip,long timeOut,boolean debug){
         client = new OkHttpClient();
         gson = new Gson();
+        this.DEBUG = debug;
         this.cacheType = cacheType;
         if(cachedDir!=null){
             client.setCache(new Cache(cachedDir,maxCacheSize));
@@ -87,75 +89,136 @@ public class OKHttpUtils<T>{
         return  new Builder(context).build();
     }
 
-    public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
-
-        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),headers,callback);
+    public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params, Callback callback){
+        request(url,cacheType,POST,createRequestBody(params),headers,null,callback);
     }
-    public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
-
-        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),headers,callback);
+    public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params,Object tag, Callback callback){
+        request(url,cacheType,POST,createRequestBody(params),headers,tag,callback);
     }
-    public void post(final String url,CacheType cacheType, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
 
-        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),null,callback);
-    }
-    public void post(final String url,Headers headers, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
 
-        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),headers,callback);
+    public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params, JsonCallback callback){
+        request(url,cacheType,POST,createRequestBody(params),headers,null,callback);
     }
-    public void post(final String url, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
+    public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params,Object tag, JsonCallback callback){
+        request(url,cacheType,POST,createRequestBody(params),headers,tag,callback);
+    }
 
-        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),headers,callback);
-    }
-    public void post(final String url, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
 
-        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),null,callback);
+    public void post(final String url,CacheType cacheType, Map<String,String> params, Callback callback){
+        request(url,cacheType,POST,createRequestBody(params),null,null,callback);
     }
-    public void post(final String url,CacheType cacheType, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
+    public void post(final String url,CacheType cacheType, Map<String,String> params,Object tag, Callback callback){
+        request(url,cacheType,POST,createRequestBody(params),null,tag,callback);
+    }
 
-        request(url,cacheType,POST,createRequestBody(params,encodedKey,encodedValue),null,callback);
+
+    public void post(final String url,CacheType cacheType, Map<String,String> params, JsonCallback callback){
+        request(url,cacheType,POST,createRequestBody(params),null,null,callback);
     }
+    public void post(final String url,CacheType cacheType, Map<String,String> params,Object tag, JsonCallback callback){
+        request(url,cacheType,POST,createRequestBody(params),null,tag,callback);
+    }
+
+    public void post(final String url,Headers headers, Map<String,String> params, Callback callback){
+        request(url,cacheType,POST,createRequestBody(params),headers,null,callback);
+    }
+    public void post(final String url,Headers headers, Map<String,String> params,Object tag, Callback callback){
+        request(url,cacheType,POST,createRequestBody(params),headers,tag,callback);
+    }
+
+
+    public void post(final String url, Headers headers, Map<String,String> params, JsonCallback callback){
+        request(url,cacheType,POST,createRequestBody(params),headers,null,callback);
+    }
+    public void post(final String url, Headers headers, Map<String,String> params,Object tag, JsonCallback callback){
+        request(url,cacheType,POST,createRequestBody(params),headers,tag,callback);
+    }
+
+
     public void post(String url, Map<String,String> params,JsonCallback callback){
-        request(url,cacheType,POST,createRequestBody(params),null,callback);
+        request(url,cacheType,POST,createRequestBody(params),null,null,callback);
+    }
+    public void post(String url, Map<String,String> params,Object tag,JsonCallback callback){
+        request(url,cacheType,POST,createRequestBody(params),null,tag,callback);
     }
 
     public void post(String url, Map<String,String> params,Callback callback){
-        request(url,cacheType,POST,createRequestBody(params),null,callback);
+        request(url,cacheType,POST,createRequestBody(params),null,null,callback);
+    }
+    public void post(String url, Map<String,String> params,Object tag,Callback callback){
+        request(url,cacheType,POST,createRequestBody(params),null,tag,callback);
     }
 
     public void post(String url,JsonCallback callback){
-        request(url,cacheType,POST,null,null,callback);
+        request(url,cacheType,POST,null,null,null,callback);
+    }
+    public void post(String url,Object tag,JsonCallback callback){
+        request(url,cacheType,POST,null,null,tag,callback);
     }
 
     public void post(String url,Callback callback){
-        request(url,cacheType,POST,null,null,callback);
+        request(url,cacheType,POST,null,null,null,callback);
     }
-    public void get(final String url, Headers headers,Callback callback){
-        request(url,cacheType,GET,null,headers,callback);
-    }
-    public void get(final String url, Headers headers, JsonCallback callback){
-        request(url,cacheType,GET,null,headers,callback);
-    }
-    public void get(final String url,Callback callback){
-        request(url,cacheType,GET,null,null,callback);
-    }
-    public void get(final String url,JsonCallback callback){
-        request(url,cacheType,GET,null,null,callback);
-    }
-    public void get(final String url,CacheType cacheType, Headers headers,Callback callback){
-        request(url,cacheType,GET,null,headers,callback);
-    }
-    public void get(final String url,CacheType cacheType, Headers headers, JsonCallback callback){
-        request(url,cacheType,GET,null,headers,callback);
-    }
-    public void get(final String url,CacheType cacheType,Callback callback){
-        request(url,cacheType,GET,null,null,callback);
-    }
-    public void get(final String url,CacheType cacheType,JsonCallback callback){
-        request(url,cacheType,GET,null,null,callback);
+    public void post(String url,Object tag,Callback callback){
+        request(url,cacheType,POST,null,null,tag,callback);
     }
 
-    public static RequestBody createRequestBody(Map<String,String> params,String encodedKey,String encodedValue){
+
+    public void get(final String url, Headers headers,Callback callback){
+        request(url,cacheType,GET,null,headers,null,callback);
+    }
+    public void get(final String url, Headers headers,Object  tag,Callback callback){
+        request(url,cacheType,GET,null,headers,tag,callback);
+    }
+
+
+
+    public void get(final String url, Headers headers, JsonCallback callback){
+        request(url,cacheType,GET,null,headers,null,callback);
+    }
+    public void get(final String url,Callback callback){
+        request(url,cacheType,GET,null,null,null,callback);
+    }
+    public void get(final String url,JsonCallback callback){
+        request(url,cacheType,GET,null,null,null,callback);
+    }
+    public void get(final String url,CacheType cacheType, Headers headers,Callback callback){
+        request(url,cacheType,GET,null,headers,null,callback);
+    }
+    public void get(final String url,CacheType cacheType, Headers headers, JsonCallback callback){
+        request(url,cacheType,GET,null,headers,null,callback);
+    }
+    public void get(final String url,CacheType cacheType,Callback callback){
+        request(url,cacheType,GET,null,null,null,callback);
+    }
+    public void get(final String url,CacheType cacheType,JsonCallback callback){
+        request(url,cacheType,GET,null,null,null,callback);
+    }
+
+    public void get(final String url, Headers headers,Object tag, JsonCallback callback){
+        request(url,cacheType,GET,null,headers,tag,callback);
+    }
+    public void get(final String url,Object tag,Callback callback){
+        request(url,cacheType,GET,null,null,tag,callback);
+    }
+    public void get(final String url,Object tag,JsonCallback callback){
+        request(url,cacheType,GET,null,null,tag,callback);
+    }
+    public void get(final String url,CacheType cacheType, Headers headers,Object tag,Callback callback){
+        request(url,cacheType,GET,null,headers,tag,callback);
+    }
+    public void get(final String url,CacheType cacheType, Headers headers, Object tag,JsonCallback callback){
+        request(url,cacheType,GET,null,headers,tag,callback);
+    }
+    public void get(final String url,CacheType cacheType,Object tag,Callback callback){
+        request(url,cacheType,GET,null,null,tag,callback);
+    }
+    public void get(final String url,CacheType cacheType,Object tag,JsonCallback callback){
+        request(url,cacheType,GET,null,null,tag,callback);
+    }
+
+    public  RequestBody createRequestBody(Map<String,String> params,String encodedKey,String encodedValue){
         FormEncodingBuilder formEncodingBuilder = new FormEncodingBuilder();
         if(params!=null&&!params.isEmpty()){
             Set<String> keys = params.keySet();
@@ -168,14 +231,22 @@ public class OKHttpUtils<T>{
         }
         return formEncodingBuilder.build();
     }
-    public static RequestBody createRequestBody(Map<String,String> params){
-        return createRequestBody(params,null,null);
+    public RequestBody createRequestBody(Map<String,String> params){
+        MultipartBuilder multipartBuilder = new MultipartBuilder();
+        multipartBuilder.type(mediaType);
+        if(params!=null&&!params.isEmpty()){
+            Set<String> keys = params.keySet();
+            for(String key:keys){
+                multipartBuilder.addFormDataPart(key,params.get(key));
+            }
+        }
+        return multipartBuilder.build();
     }
 
 
 
-    public void request(final String url, final CacheType cacheType, final String method, final RequestBody requestBody, final Headers headers,final JsonCallback callback){
-        request(url,cacheType, method,requestBody, headers, new Callback() {
+    public void request(final String url, final CacheType cacheType, final String method, final RequestBody requestBody, final Headers headers,Object tag,final JsonCallback callback){
+        request(url,cacheType, method,requestBody, headers,tag, new Callback() {
             @Override
             public void onStart() {
                 if(callback!=null){
@@ -217,17 +288,17 @@ public class OKHttpUtils<T>{
         });
     }
 
-    public void request(final String url, final CacheType cacheType, final String method, final RequestBody requestBody, final Headers headers, final Callback callback){
+    public void request(final String url, final CacheType cacheType, final String method, final RequestBody requestBody, final Headers headers, final Object tag , final Callback callback){
         if(callback!=null)callback.onStart();
         switch (cacheType){
             case ONLY_NETWORK:
-                requestFromNetwork(url,method,requestBody,headers,callback);
+                requestFromNetwork(url,method,requestBody,headers,tag,callback);
                 break;
             case ONLY_CACHED:
-                requestFromCached(url,method,requestBody,headers,callback);
+                requestFromCached(url,method,requestBody,headers,tag,callback);
                 break;
             case CACHED_ELSE_NETWORK:
-                requestFromCached(url,method,requestBody,headers, new Callback() {
+                requestFromCached(url,method,requestBody,headers,tag, new Callback() {
                     @Override
                     public void onStart() {
                         if(callback!=null){
@@ -244,7 +315,7 @@ public class OKHttpUtils<T>{
 
                     @Override
                     public void onFailure(Request request, IOException e) {
-                        requestFromNetwork(url,method,requestBody,headers,callback);
+                        requestFromNetwork(url,method,requestBody,headers,tag,callback);
                     }
 
                     @Override
@@ -255,13 +326,13 @@ public class OKHttpUtils<T>{
                                 callback.onFinish();
                             }
                         }else{
-                            requestFromNetwork(url,method,requestBody,headers,callback);
+                            requestFromNetwork(url,method,requestBody,headers,tag,callback);
                         }
                     }
                 });
                 break;
             case NETWORK_ELSE_CACHED:
-                requestFromNetwork(url,method,requestBody,headers, new Callback() {
+                requestFromNetwork(url,method,requestBody,headers,tag, new Callback() {
                     @Override
                     public void onStart() {
                         if(callback!=null){
@@ -278,7 +349,7 @@ public class OKHttpUtils<T>{
 
                     @Override
                     public void onFailure(Request request, IOException e) {
-                        requestFromCached(url,method,requestBody,headers,callback);
+                        requestFromCached(url,method,requestBody,headers,tag,callback);
                     }
 
                     @Override
@@ -289,29 +360,29 @@ public class OKHttpUtils<T>{
                                 callback.onFinish();
                             }
                         }else{
-                            requestFromCached(url,method,requestBody,headers,callback);
+                            requestFromCached(url,method,requestBody,headers,tag,callback);
                         }
                     }
                 });
                 break;
         }
     }
-
-    public void requestFromNetwork(final String url,String method,RequestBody requestBody, Headers headers,final Callback callback){
-        request(url,method,requestBody,CacheControl.FORCE_NETWORK,headers,callback);
+    public void requestFromNetwork(final String url,String method,RequestBody requestBody, Headers headers,Object tag,final Callback callback){
+        request(url,method,requestBody,CacheControl.FORCE_NETWORK,headers,tag,callback);
     }
 
-    public void requestFromCached(String url,String method,RequestBody requestBody,Headers headers ,final Callback callback){
-        request(url,method,requestBody,CacheControl.FORCE_CACHE,headers,callback);
+    public void requestFromCached(String url,String method,RequestBody requestBody,Headers headers ,Object tag,final Callback callback){
+        request(url,method,requestBody,CacheControl.FORCE_CACHE,headers,tag,callback);
     }
 
-    private void request(String url, String method, RequestBody requestBody, final CacheControl cacheControl, Headers headers, final Callback callback){
+
+    private void request(String url, String method, RequestBody requestBody, final CacheControl cacheControl, Headers headers,Object tag ,final Callback callback){
         final Request.Builder requestBuilder = new Request.Builder().url(url).cacheControl(cacheControl);
         if(headers!=null){
             requestBuilder.headers(headers);
         }
         requestBuilder.method(method,requestBody);
-        requestBuilder.tag(url);
+        requestBuilder.tag(tag==null?url:tag);
 
         final Request request = requestBuilder.build();
         request(request,new Callback() {
@@ -358,8 +429,13 @@ public class OKHttpUtils<T>{
     }
 
 
-    private void request(Request request, Callback callback){
-        client.newCall(request).enqueue(callback);
+    private Call request(Request request, Callback callback){
+        if(DEBUG){
+            Log.d("OKHttp",request.toString());
+        }
+        Call call = client.newCall(request);
+        call.enqueue(callback);
+        return call;
     }
 
 
@@ -376,6 +452,7 @@ public class OKHttpUtils<T>{
         private CacheType cacheType = CacheType.NETWORK_ELSE_CACHED;
         private boolean isGzip = false;
         private long timeOut = 5000;
+        private boolean debug = false;
 
 
         public Builder(Context context) {
@@ -386,7 +463,7 @@ public class OKHttpUtils<T>{
         }
 
         public OKHttpUtils build(){
-            return new OKHttpUtils(context,maxCachedSize,cachedDir,maxCacheAge,cacheType,networkInterceptors,interceptors,isGzip,timeOut);
+            return new OKHttpUtils(context,maxCachedSize,cachedDir,maxCacheAge,cacheType,networkInterceptors,interceptors,isGzip,timeOut,debug);
         }
 
         public Builder timeOut(long timeOut){
@@ -394,6 +471,10 @@ public class OKHttpUtils<T>{
             return this;
         }
 
+        public Builder debug(boolean debug) {
+            this.debug = debug;
+            return this;
+        }
         public Builder gzip(boolean openGzip) {
             this.isGzip = openGzip;
             return this;
@@ -458,12 +539,12 @@ public class OKHttpUtils<T>{
 
 
     /**
-     * 通过url来取消一个请求  如果使用自定义的Request,传入request的Tag为url才能有效
-     * @param url
+     * 通过tag来取消一个请求  默认为url
+     * @param tag
      */
-    public void cancel(String url){
+    public void cancel(Object tag){
         try {
-            client.cancel(url);
+            client.cancel(tag);
         } catch (Exception e) {
 //            e.printStackTrace();
         }
@@ -475,11 +556,7 @@ public class OKHttpUtils<T>{
 
         MultipartBuilder multipartBuilder = new MultipartBuilder();
 
-        if(headers!=null){
-            multipartBuilder.addPart(headers,createUploadRequestBody(MultipartBuilder.FORM,file,uploadListener));
-        }else{
-            multipartBuilder.addPart(createUploadRequestBody(MultipartBuilder.FORM,file,uploadListener));
-        }
+        multipartBuilder.addPart(headers,createUploadRequestBody(MultipartBuilder.FORM,file,uploadListener));
         Request request = new Request.Builder()
                 .url(url)
                 .post(multipartBuilder.build())
@@ -531,7 +608,8 @@ public class OKHttpUtils<T>{
             }
 
             Request compressedRequest = originalRequest.newBuilder()
-                    .header("Content-Encoding", "gzip")
+                    .header("Accept-Encoding","gzip")
+//                    .header("Content-Encoding", "gzip")
                     .method(originalRequest.method(), gzip(originalRequest.body()))
                     .build();
             return chain.proceed(compressedRequest);
@@ -557,6 +635,10 @@ public class OKHttpUtils<T>{
     }
 
 
+    /**
+     * okhttp内部默认启用了gzip,此选项是针对需要对post数据进行gzip后发送给服务器的,如服务器不支持,请勿开启
+     * @param open
+     */
     public void gzip(boolean open){
         if(open){
             if(!client.interceptors().contains(gzipRequestInterceptor)){
@@ -568,5 +650,14 @@ public class OKHttpUtils<T>{
             }
         }
     }
+
+    public void clearCached(){
+        try {
+            client.getCache().delete();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }
