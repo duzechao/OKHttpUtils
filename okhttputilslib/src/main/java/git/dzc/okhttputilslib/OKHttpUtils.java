@@ -6,18 +6,6 @@ import android.util.Log;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
-import com.squareup.okhttp.Cache;
-import com.squareup.okhttp.CacheControl;
-import com.squareup.okhttp.Call;
-import com.squareup.okhttp.FormEncodingBuilder;
-import com.squareup.okhttp.Headers;
-import com.squareup.okhttp.Interceptor;
-import com.squareup.okhttp.MediaType;
-import com.squareup.okhttp.MultipartBuilder;
-import com.squareup.okhttp.OkHttpClient;
-import com.squareup.okhttp.Request;
-import com.squareup.okhttp.RequestBody;
-import com.squareup.okhttp.Response;
 
 import java.io.File;
 import java.io.IOException;
@@ -26,6 +14,17 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import okhttp3.Cache;
+import okhttp3.CacheControl;
+import okhttp3.Call;
+import okhttp3.Headers;
+import okhttp3.Interceptor;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import okio.Buffer;
 import okio.BufferedSink;
 import okio.GzipSink;
@@ -42,7 +41,7 @@ public class OKHttpUtils<T>{
     private OkHttpClient client = null;
     private Gson gson;
     private CacheType cacheType = CacheType.ONLY_NETWORK;
-    private MediaType mediaType = MultipartBuilder.FORM;
+    private MediaType mediaType = MultipartBody.FORM;
 
     public  OkHttpClient getClient(){
         return client;
@@ -52,14 +51,14 @@ public class OKHttpUtils<T>{
     private OKHttpUtils() {
     }
     private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, final int maxCacheAge, CacheType cacheType , List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors,boolean isGzip,long timeOut,boolean debug){
-        client = new OkHttpClient();
+        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
         gson = new Gson();
         this.DEBUG = debug;
         this.cacheType = cacheType;
         if(cachedDir!=null){
-            client.setCache(new Cache(cachedDir,maxCacheSize));
+            clientBuilder.cache(new Cache(cachedDir,maxCacheSize));
         }else{
-            client.setCache(new Cache(context.getCacheDir(),maxCacheSize));
+            clientBuilder.cache(new Cache(context.getCacheDir(),maxCacheSize));
         }
         Interceptor cacheInterceptor = new Interceptor() {
             @Override public Response intercept(Chain chain) throws IOException {
@@ -71,18 +70,19 @@ public class OKHttpUtils<T>{
             }
         };
         if(isGzip){
-            if(!client.interceptors().contains(gzipRequestInterceptor)){
-                client.interceptors().add(new GzipRequestInterceptor());
+            if(!clientBuilder.interceptors().contains(gzipRequestInterceptor)){
+                clientBuilder.addInterceptor(new GzipRequestInterceptor());
             }
         }
-        client.networkInterceptors().add(cacheInterceptor);
+        clientBuilder.addNetworkInterceptor(cacheInterceptor);
         if(netWorkinterceptors!=null && !netWorkinterceptors.isEmpty()){
-            client.networkInterceptors().addAll(netWorkinterceptors);
+            clientBuilder.networkInterceptors().addAll(netWorkinterceptors);
         }
         if(interceptors!=null && !interceptors.isEmpty()){
-            client.interceptors().addAll(interceptors);
+            clientBuilder.interceptors().addAll(interceptors);
         }
-        client.setConnectTimeout(timeOut, TimeUnit.MILLISECONDS);
+        clientBuilder.connectTimeout(timeOut, TimeUnit.MILLISECONDS);
+        client = clientBuilder.build();
     }
 
     public OKHttpUtils initDefault(Context context){
@@ -218,22 +218,22 @@ public class OKHttpUtils<T>{
         request(url,cacheType,GET,null,null,tag,callback);
     }
 
-    public  RequestBody createRequestBody(Map<String,String> params,String encodedKey,String encodedValue){
-        FormEncodingBuilder formEncodingBuilder = new FormEncodingBuilder();
-        if(params!=null&&!params.isEmpty()){
-            Set<String> keys = params.keySet();
-            for(String key:keys){
-                formEncodingBuilder.add(key,params.get(key));
-            }
-        }
-        if(!TextUtils.isEmpty(encodedKey) && !TextUtils.isEmpty(encodedValue)){
-            formEncodingBuilder.addEncoded(encodedKey,encodedValue);
-        }
-        return formEncodingBuilder.build();
-    }
+//    public  RequestBody createRequestBody(Map<String,String> params,String encodedKey,String encodedValue){
+//        FormEncodingBuilder formEncodingBuilder = new FormEncodingBuilder();
+//        if(params!=null&&!params.isEmpty()){
+//            Set<String> keys = params.keySet();
+//            for(String key:keys){
+//                formEncodingBuilder.add(key,params.get(key));
+//            }
+//        }
+//        if(!TextUtils.isEmpty(encodedKey) && !TextUtils.isEmpty(encodedValue)){
+//            formEncodingBuilder.addEncoded(encodedKey,encodedValue);
+//        }
+//        return formEncodingBuilder.build();
+//    }
     public RequestBody createRequestBody(Map<String,String> params){
-        MultipartBuilder multipartBuilder = new MultipartBuilder();
-        multipartBuilder.type(mediaType);
+        MultipartBody.Builder multipartBuilder = new MultipartBody.Builder();
+        multipartBuilder.setType(mediaType);
         if(params!=null&&!params.isEmpty()){
             Set<String> keys = params.keySet();
             for(String key:keys){
@@ -539,24 +539,22 @@ public class OKHttpUtils<T>{
 
 
     /**
+     * OkHttp3方法有变   此方法废弃
      * 通过tag来取消一个请求  默认为url
      * @param tag
      */
+    @Deprecated
     public void cancel(Object tag){
-        try {
-            client.cancel(tag);
-        } catch (Exception e) {
-//            e.printStackTrace();
-        }
+
     }
 
 
 
     public Call uploadFile(String url, File file, Headers headers, UploadListener uploadListener){
 
-        MultipartBuilder multipartBuilder = new MultipartBuilder();
+        MultipartBody.Builder multipartBuilder = new MultipartBody.Builder();
 
-        multipartBuilder.addPart(headers,createUploadRequestBody(MultipartBuilder.FORM,file,uploadListener));
+        multipartBuilder.addPart(headers,createUploadRequestBody(MultipartBody.FORM,file,uploadListener));
         Request request = new Request.Builder()
                 .url(url)
                 .post(multipartBuilder.build())
@@ -653,7 +651,7 @@ public class OKHttpUtils<T>{
 
     public void clearCached(){
         try {
-            client.getCache().delete();
+            client.cache().delete();
         } catch (IOException e) {
             e.printStackTrace();
         }

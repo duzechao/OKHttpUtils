@@ -6,7 +6,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import com.squareup.okhttp.Request;
+import okhttp3.Request;
 
 import java.io.IOException;
 
@@ -106,6 +106,6 @@ public class MainActivity extends AppCompatActivity {
     protected void onDestroy() {
         super.onDestroy();
         //cancel all request
-        okHttpUtils.cancel(MainActivity.this);
+//        okHttpUtils.cancel(MainActivity.this);
     }
 }

@@ -1,4 +1,4 @@
-#＃ OKHttpUtils
+#＃ OKHttpUtils  (此分支依赖于OkHttp3,小部分功能尚未完善)
 
 #如果需要文件下载，请看这个库[DownloadManager](https://github.com/duzechao/DownloadManager)
 
@@ -19,12 +19,6 @@
 支持get和post请求，默认查询方式为NETWORK_ELSE_CACHED，可通过Builder来指定默认查询方式
 
 #Android Studio
-compile('git.dzc:okhttputilslib:1.0.4')
-如果找不到,在build.gradle加入
-repositories {
-    mavenCentral()
-    jcenter()
-}
 
 
 #简单使用方法：
@@ -80,7 +74,7 @@ repositories {
 通过interceptors()和networkInterceptors()可添加拦截器
 拦截器的使用说明请参考这篇文章 [http://www.tuicool.com/articles/Uf6bAnz](http://www.tuicool.com/articles/Uf6bAnz)
 
-#取消请求
+#取消请求(此方法在OkHttp3中已废弃,调用无效)
 *取消单个请求 cancel(url)
 
 *通过将Activity作为tag传进方法,可在Activity的onDestroy方法取消所有请求
