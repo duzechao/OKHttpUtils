@@ -1,5 +1,5 @@
 #＃ OKHttpUtils
-
+okhttp3.0 support [https://github.com/duzechao/OKHttpUtils/tree/okhttp3.0](https://github.com/duzechao/OKHttpUtils/tree/okhttp3.0)
 #如果需要文件下载，请看这个库[DownloadManager](https://github.com/duzechao/DownloadManager)
 
 对OkHttp进行封装，实现了只查询缓存，网络请求失败自动查询本地缓存等功能,结果用Gson解析
