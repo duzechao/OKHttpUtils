@@ -1,6 +1,8 @@
 package git.dzc.okhttputilslib;
 
 import com.google.gson.reflect.TypeToken;
+
+import okhttp3.Call;
 import okhttp3.Request;
 import okhttp3.Response;
 
@@ -12,7 +14,7 @@ import java.lang.reflect.Type;
  * Created by dzc on 15/12/10.
  */
 public abstract class JsonCallback<T> {
-    public abstract void onFailure(Request request, Exception e);
+    public abstract void onFailure(Call call, Exception e);
     public abstract void onResponse(T object) throws IOException;
 
     public void onStart(){

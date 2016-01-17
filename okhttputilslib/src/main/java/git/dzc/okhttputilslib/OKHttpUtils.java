@@ -218,7 +218,7 @@ public class OKHttpUtils<T>{
         request(url,cacheType,GET,null,null,tag,callback);
     }
 
-//    public  RequestBody createRequestBody(Map<String,String> params,String encodedKey,String encodedValue){
+    //    public  RequestBody createRequestBody(Map<String,String> params,String encodedKey,String encodedValue){
 //        FormEncodingBuilder formEncodingBuilder = new FormEncodingBuilder();
 //        if(params!=null&&!params.isEmpty()){
 //            Set<String> keys = params.keySet();
@@ -248,6 +248,14 @@ public class OKHttpUtils<T>{
     public void request(final String url, final CacheType cacheType, final String method, final RequestBody requestBody, final Headers headers,Object tag,final JsonCallback callback){
         request(url,cacheType, method,requestBody, headers,tag, new Callback() {
             @Override
+            public void onFailure(Call call, IOException e) {
+                if(callback!=null){
+                    callback.onFailure(call,e);
+                    callback.onFinish();
+                }
+            }
+
+            @Override
             public void onStart() {
                 if(callback!=null){
                     callback.onStart();
@@ -255,16 +263,9 @@ public class OKHttpUtils<T>{
             }
 
 
-            @Override
-            public void onFailure(Request request, IOException e) {
-                if(callback!=null){
-                    callback.onFailure(request,e);
-                    callback.onFinish();
-                }
-            }
 
             @Override
-            public void onResponse(Response response) throws IOException {
+            public void onResponse(Call call,Response response) throws IOException {
                 if(response.isSuccessful() && callback!=null){
                     String jsonString = response.body().string();;
                     if(!TextUtils.isEmpty(jsonString)){
@@ -314,15 +315,16 @@ public class OKHttpUtils<T>{
                     }
 
                     @Override
-                    public void onFailure(Request request, IOException e) {
+                    public void onFailure(Call call, IOException e) {
                         requestFromNetwork(url,method,requestBody,headers,tag,callback);
                     }
 
+
                     @Override
-                    public void onResponse(Response response) throws IOException {
+                    public void onResponse(Call call,Response response) throws IOException {
                         if(response.code()==200){
                             if(callback!=null){
-                                callback.onResponse(response);
+                                callback.onResponse(call,response);
                                 callback.onFinish();
                             }
                         }else{
@@ -347,16 +349,17 @@ public class OKHttpUtils<T>{
                         }
                     }
 
+
                     @Override
-                    public void onFailure(Request request, IOException e) {
+                    public void onFailure(Call call, IOException e) {
                         requestFromCached(url,method,requestBody,headers,tag,callback);
                     }
 
                     @Override
-                    public void onResponse(Response response) throws IOException {
+                    public void onResponse(Call call,Response response) throws IOException {
                         if(response.code()==200){
                             if(callback!=null){
-                                callback.onResponse(response);
+                                callback.onResponse(call,response);
                                 callback.onFinish();
                             }
                         }else{
@@ -402,26 +405,26 @@ public class OKHttpUtils<T>{
             }
 
             @Override
-            public void onFailure(Request request, IOException e) {
+            public void onFailure(Call call, IOException e) {
                 if(callback!=null){
-                    callback.onFailure(request,e);
+                    callback.onFailure(call,e);
                     callback.onFinish();
                 }
             }
 
             @Override
-            public void onResponse(Response response) throws IOException {
+            public void onResponse(Call call,Response response) throws IOException {
                 if(response.code()==504){
                     if(CacheControl.FORCE_CACHE == cacheControl){
                         if(callback!=null){
-                            callback.onFailure(request,new IOException("cached not found"));
+                            callback.onFailure(call,new IOException("cached not found"));
                             callback.onFinish();
                         }
                         return;
                     }
                 }
                 if(callback!=null){
-                    callback.onResponse(response);
+                    callback.onResponse(call,response);
                     callback.onFinish();
                 }
             }

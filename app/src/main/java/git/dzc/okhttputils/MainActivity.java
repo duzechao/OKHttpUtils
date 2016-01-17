@@ -6,6 +6,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
+import okhttp3.Call;
 import okhttp3.Request;
 
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.io.IOException;
 import git.dzc.okhttputilslib.CacheType;
 import git.dzc.okhttputilslib.JsonCallback;
 import git.dzc.okhttputilslib.OKHttpUtils;
+import git.dzc.okhttputilslib.OkHttpRequest;
 
 public class MainActivity extends AppCompatActivity {
     private String TAG = MainActivity.this.getClass().getSimpleName();
@@ -68,9 +70,18 @@ public class MainActivity extends AppCompatActivity {
         });
     }
 
+    private void fail(final Exception e){
+        tv5.post(new Runnable() {
+            @Override
+            public void run() {
+                tv5.setText("onFailure  "+e.toString());
+            }
+        });
+    }
 
+    private String url = "http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json";
     private void getData(final CacheType cacheType){
-        okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType, MainActivity.this,new JsonCallback<DateModule>() {
+        okHttpUtils.get(url, cacheType, MainActivity.this,new JsonCallback<DateModule>() {
 
 
             @Override
@@ -84,19 +95,24 @@ public class MainActivity extends AppCompatActivity {
             }
 
             @Override
-            public void onFailure(Request request, Exception e) {
+            public void onFailure(Call call, Exception e) {
                 Log.d(TAG,"onFailure");
+                fail(e);
             }
 
             @Override
             public void onResponse(final DateModule object) throws IOException {
                 Log.d(TAG,"onResponse");
-                tv5.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        tv5.setText(object.getResult().getDatetime_2());
-                    }
-                });
+                if(object!=null){
+                    tv5.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            tv5.setText(object.getResult().getDatetime_2());
+                        }
+                    });
+                }else{
+                    fail(new Exception("object==null"));
+                }
             }
         });
     }
