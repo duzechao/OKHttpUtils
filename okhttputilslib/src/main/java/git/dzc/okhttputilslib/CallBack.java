@@ -1,16 +1,15 @@
 package git.dzc.okhttputilslib;
 
 
+import com.squareup.okhttp.Request;
+import com.squareup.okhttp.Response;
 
 import java.io.IOException;
-
-import okhttp3.Request;
-import okhttp3.Response;
 
 /**
  * Created by dzc on 15/12/11.
  */
-public abstract class Callback implements okhttp3.Callback {
+public abstract class Callback implements com.squareup.okhttp.Callback {
     public void onStart(){
 
     }
