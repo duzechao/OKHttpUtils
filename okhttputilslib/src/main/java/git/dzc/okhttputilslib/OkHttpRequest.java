@@ -1,6 +1,6 @@
 package git.dzc.okhttputilslib;
 
-import com.squareup.okhttp.Headers;
+import okhttp3.Headers;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -8,7 +8,7 @@ import java.util.Map;
 /**
  * Created by dzc on 16/1/10.
  */
-public class OKHttpRequest {
+public class OkHttpRequest {
 
     private String url;
     private Headers headers;
@@ -18,7 +18,7 @@ public class OKHttpRequest {
     private long maxCacheAge;
 
 
-    private OKHttpRequest(CacheType cacheType, Headers headers, long maxCacheAge, Map<String, String> params, Object tag, String url) {
+    private OkHttpRequest(CacheType cacheType, Headers headers, long maxCacheAge, Map<String, String> params, Object tag, String url) {
         this.cacheType = cacheType;
         this.headers = headers;
         this.maxCacheAge = maxCacheAge;
@@ -124,8 +124,8 @@ public class OKHttpRequest {
             return this;
         }
 
-        public OKHttpRequest build(){
-            return new OKHttpRequest(cacheType,Headers.of(headers),maxCacheAge,params,tag,url);
+        public OkHttpRequest build(){
+            return new OkHttpRequest(cacheType,Headers.of(headers),maxCacheAge,params,tag,url);
         }
     }
 }
