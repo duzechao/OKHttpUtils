@@ -2,17 +2,19 @@ package git.dzc.okhttputils;
 
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
 import android.widget.TextView;
 
-import com.squareup.okhttp.Request;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import git.dzc.okhttputilslib.CacheType;
 import git.dzc.okhttputilslib.JsonCallback;
 import git.dzc.okhttputilslib.OKHttpUtils;
+import okhttp3.CacheControl;
+import okhttp3.Call;
+import okhttp3.Request;
 
 public class MainActivity extends AppCompatActivity {
     private String TAG = MainActivity.this.getClass().getSimpleName();
@@ -22,6 +24,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView tv3;
     private TextView tv4;
     private TextView tv5;
+    private TextView tv6;
 
     private OKHttpUtils okHttpUtils;
 
@@ -38,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
         tv3 = (TextView) findViewById(R.id.tv3);
         tv4 = (TextView) findViewById(R.id.tv4);
         tv5 = (TextView) findViewById(R.id.tv5);
+        tv6 = (TextView) findViewById(R.id.tv6);
 
         tv1.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -50,6 +54,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 getData(CacheType.ONLY_CACHED);
+
             }
         });
 
@@ -66,46 +71,51 @@ public class MainActivity extends AppCompatActivity {
                 getData(CacheType.CACHED_ELSE_NETWORK);
             }
         });
-    }
-
-
-    private void getData(final CacheType cacheType){
-        okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType, MainActivity.this,new JsonCallback<DateModule>() {
-
-
+        tv6.setOnClickListener(new View.OnClickListener() {
             @Override
-            public void onStart() {
-                Log.d(TAG,"onStart");
-            }
+            public void onClick(View v) {
+                Request request = new Request.Builder().url(url).cacheControl(new CacheControl.Builder().maxAge(5, TimeUnit.SECONDS)
+                        .maxStale(5,TimeUnit.SECONDS).build()).build();
+                okHttpUtils.request(request, CacheType.ONLY_NETWORK, jsonCallback);
 
-            @Override
-            public void onFinish() {
-                Log.d(TAG,"onFinish");
-            }
-
-            @Override
-            public void onFailure(Request request, Exception e) {
-                Log.d(TAG,"onFailure");
-            }
-
-            @Override
-            public void onResponse(final DateModule object) throws IOException {
-                Log.d(TAG,"onResponse");
-                tv5.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        tv5.setText(object.getResult().getDatetime_2());
-                    }
-                });
             }
         });
     }
 
+    private String url = "http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json";
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        //cancel all request
-        okHttpUtils.cancel(MainActivity.this);
+
+    private void getData(@CacheType int cacheType){
+        tv5.setText("");
+        Request request = new Request.Builder().url(url).build();
+        okHttpUtils.request(request, cacheType, jsonCallback);
+    }
+    private JsonCallback<DateModule> jsonCallback = new JsonCallback<DateModule>() {
+        @Override
+        public void onFailure(Call call, Exception e) {
+            onFail(e);
+        }
+
+        @Override
+        public void onResponse(Call call, final DateModule object) throws IOException {
+            if(object!=null){
+                tv5.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        tv5.setText(object.getResult().getDatetime_1());
+                    }
+
+                });
+            }
+        }
+    };
+
+    private void onFail(final Exception e){
+        tv5.post(new Runnable() {
+            @Override
+            public void run() {
+                tv5.setText(e.toString());
+            }
+        });
     }
 }

@@ -4,6 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/OKHttpUtils.iml" filepath="$PROJECT_DIR$/OKHttpUtils.iml" />
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
+      <module fileurl="file://$PROJECT_DIR$/okhttp/okhttp.iml" filepath="$PROJECT_DIR$/okhttp/okhttp.iml" />
       <module fileurl="file://$PROJECT_DIR$/okhttputilslib/okhttputilslib.iml" filepath="$PROJECT_DIR$/okhttputilslib/okhttputilslib.iml" />
     </modules>
   </component>

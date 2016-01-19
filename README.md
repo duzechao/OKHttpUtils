@@ -1,5 +1,5 @@
 #＃ OKHttpUtils
-okhttp3.0 support [https://github.com/duzechao/OKHttpUtils/tree/okhttp3.0](https://github.com/duzechao/OKHttpUtils/tree/okhttp3.0)
+依赖于okhttp，修改了小部分的okhttp源码，将Cache的部分方法改成public来查询缓存
 #如果需要文件下载，请看这个库[DownloadManager](https://github.com/duzechao/DownloadManager)
 
 对OkHttp进行封装，实现了只查询缓存，网络请求失败自动查询本地缓存等功能,结果用Gson解析
@@ -16,75 +16,50 @@ okhttp3.0 support [https://github.com/duzechao/OKHttpUtils/tree/okhttp3.0](https
 
 *NETWORK_ELSE_CACHED  先查询网络数据，如果没有，再查询本地缓存
 
-支持get和post请求，默认查询方式为NETWORK_ELSE_CACHED，可通过Builder来指定默认查询方式
-
-#Android Studio
-compile('git.dzc:okhttputilslib:1.0.4')
-如果找不到,在build.gradle加入
-repositories {
-    mavenCentral()
-    jcenter()
-}
-
 
 #简单使用方法：
- 1.get请求，post请求同理
+ 1.
 
     okHttpUtils = new OKHttpUtils.Builder(this).build();
-    okHttpUtils.get("http://api.k780.com:88/?app=life.time&appkey=10003&sign=b59bc3ef6191eb9f747dd4e83c99f2a4&format=json", cacheType, MainActivity.this,new JsonCallback<DateModule>() {
-    
-                @Override
-                public void onStart() {
-                    Log.d(TAG,"onStart");
-                }
-    
-                @Override
-                public void onFinish() {
-                    Log.d(TAG,"onFinish");
-                }
-    
-                @Override
-                public void onFailure(Request request, Exception e) {
-                    Log.d(TAG,"onFailure");
-                }
-    
-                @Override
-                public void onResponse(final DateModule object) throws IOException {
-                    Log.d(TAG,"onResponse");
-                    tv5.post(new Runnable() {
-                        @Override
-                        public void run() {
-                            tv5.setText(object.getResult().getDatetime_2());
-                        }
-                    });
-                }
-            });
+    private JsonCallback<DateModule> jsonCallback = new JsonCallback<DateModule>() {
+        @Override
+        public void onFailure(Call call, Exception e) {
+            onFail(e);
+        }
+
+        @Override
+        public void onResponse(Call call, final DateModule object) throws IOException {
+            if(object!=null){
+                tv5.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        tv5.setText(object.getResult().getDatetime_1());
+                    }
+
+                });
+            }
+        }
+    };
+    Request request = new Request.Builder().url(url).build();
+    okHttpUtils.request(request, cacheType, jsonCallback);
+            
+            
  2.上传文件
     
     uploadFile(String url, File file, Headers headers, UploadListener uploadListener)//heads如果没有 可传null
     
  3.自定义client
     
-    okHttpUtils = new OKHttpUtils.Builder(this).cachedDir(cacheDir).cacheType(CacheType.ONLY_NETWORK).gzip(true).maxCacheAge(60 *60).maxCachedSize(1024*10).build();
+    okHttpUtils = new OKHttpUtils.Builder(this).cachedDir(cacheDir).cacheType(CacheType.ONLY_NETWORK).gzip(true).maxCachedSize(1024*10).build();
 
-    
-#高级使用方法
-如果提供的get和post方法不满足需求，可调用request方法来实现需求
-
-#通过Builder初始化的方法
-    okHttpUtils = new OKHttpUtils.Builder(this).cachedDir(getCacheDir()).maxCachedSize(5 * 1024 * 1024).cacheType(CacheType.CACHED_ELSE_NETWORK).maxCacheAge(60).build();
-来配置默认的配置
-
+ 4.同步请求
+ 
+  `
+  requestAsync()方法，同步请求
+  `
 
 #可添加拦截器
 通过interceptors()和networkInterceptors()可添加拦截器
-拦截器的使用说明请参考这篇文章 [http://www.tuicool.com/articles/Uf6bAnz](http://www.tuicool.com/articles/Uf6bAnz)
-
-#取消请求
-*取消单个请求 cancel(url)
-
-*通过将Activity作为tag传进方法,可在Activity的onDestroy方法取消所有请求
-<br/><br/>(注意,一旦传入tag,通过url取消请求将会无效)
 
 #添加回调
     调用的时候传入CallBack或JsonCallBack,JsonCallBack使用了Gson解析,JsonCallBack<DateModule>或JsonCallBack<List<DateModule>>来解析当个module或一个list，支持List<Map<Object,Object>等

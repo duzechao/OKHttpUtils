@@ -4,16 +4,25 @@ import android.content.Context;
 import android.text.TextUtils;
 
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import okhttp3.Cache;
+import okhttp3.Call;
+import okhttp3.FormBody;
+import okhttp3.Headers;
+import okhttp3.Interceptor;
+import okhttp3.MediaType;
+import okhttp3.MultipartBody;
 import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.RequestBody;
+import okhttp3.Response;
 import okio.Buffer;
 import okio.BufferedSink;
 import okio.GzipSink;
@@ -21,15 +30,17 @@ import okio.Okio;
 import okio.Source;
 
 /**
- * Created by dzc on 15/11/8.
+ * Created by dzc on 16/1/20.
+ * 更新okhttp3.0版本  由于3.0一些改动较大 所以去掉了之前重载的很多函数  只有request和requestAsync这两个方法
+ * 去掉了在拦截器添加缓存时间的设置  可在Request方法中设置单个请求
+ * ONLY_CACHED和CACHED_ELSE_NETWORK会直接查询缓存，无论设置的max-age是多长
  */
-public class OKHttpUtils<T>{
-    public static final String GET = "GET";
-    public static final String POST = "POST";
+public class OKHttpUtils{
     private boolean DEBUG = true;
     private OkHttpClient client = null;
     private Gson gson;
-    private CacheType cacheType = CacheType.ONLY_NETWORK;
+    private int cacheType = CacheType.NETWORK_ELSE_CACHED;
+    private MediaType mediaType = MultipartBody.FORM;
 
     public  OkHttpClient getClient(){
         return client;
@@ -38,344 +49,254 @@ public class OKHttpUtils<T>{
 
     private OKHttpUtils() {
     }
-    private OKHttpUtils(Context context, long maxCacheSize, File cachedDir, final long maxCacheAge, CacheType cacheType , List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors,boolean isGzip){
-        OkHttpClient.Builder builder = new OkHttpClient.Builder();
-        gson = new Gson();
+    private OKHttpUtils(Context context, int maxCacheSize, File cachedDir, @CacheType int cacheType , List<Interceptor> netWorkinterceptors, List<Interceptor> interceptors, boolean isGzip, long timeOut, boolean debug){
+        OkHttpClient.Builder clientBuilder = new OkHttpClient.Builder();
+        this.DEBUG = debug;
         this.cacheType = cacheType;
+        this.gson = new Gson();
         if(cachedDir!=null){
-            builder.cache(new Cache(cachedDir,maxCacheSize));
+            clientBuilder.cache(new Cache(cachedDir,maxCacheSize));
         }else{
-            client.setCache(new Cache(context.getCacheDir(),maxCacheSize));
+            clientBuilder.cache(new Cache(context.getCacheDir(),maxCacheSize));
         }
-        Interceptor cacheInterceptor = new Interceptor() {
-            @Override public Response intercept(Chain chain) throws IOException {
-                Response originalResponse = chain.proceed(chain.request());
-                return originalResponse.newBuilder()
-                        .removeHeader("Pragma")
-                        .header("Cache-Control", String.format("max-age=%d", maxCacheAge))
-                        .build();
-            }
-        };
+//        Interceptor cacheInterceptor = new Interceptor() {
+//            @Override public Response intercept(Chain chain) throws IOException {
+//                Response originalResponse = chain.proceed(chain.request());
+//                return originalResponse.newBuilder()
+//                        .removeHeader("Pragma")
+//                        .header("Cache-Control", String.format("max-age=%d", maxCacheAge))
+//                        .build();
+//            }
+//        };
         if(isGzip){
-            if(!client.interceptors().contains(gzipRequestInterceptor)){
-                client.interceptors().add(new GzipRequestInterceptor());
+            if(!clientBuilder.interceptors().contains(gzipRequestInterceptor)){
+                clientBuilder.addInterceptor(new GzipRequestInterceptor());
             }
         }
-        client.networkInterceptors().add(cacheInterceptor);
+//        clientBuilder.addNetworkInterceptor(cacheInterceptor);
         if(netWorkinterceptors!=null && !netWorkinterceptors.isEmpty()){
-            client.networkInterceptors().addAll(netWorkinterceptors);
+            clientBuilder.networkInterceptors().addAll(netWorkinterceptors);
         }
         if(interceptors!=null && !interceptors.isEmpty()){
-            client.interceptors().addAll(interceptors);
+            clientBuilder.interceptors().addAll(interceptors);
         }
+        clientBuilder.connectTimeout(timeOut, TimeUnit.MILLISECONDS);
+        client = clientBuilder.build();
     }
 
     public OKHttpUtils initDefault(Context context){
         return  new Builder(context).build();
     }
 
-    public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
-
-        request(url,cacheType,POST,createRequestBody(params),headers,callback);
-    }
-    public void post(final String url,CacheType cacheType, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
-
-        request(url,cacheType,POST,createRequestBody(params),headers,callback);
-    }
-    public void post(final String url,CacheType cacheType, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
-
-        request(url,cacheType,POST,createRequestBody(params),null,callback);
-    }
-    public void post(final String url,Headers headers, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
-
-        request(url,cacheType,POST,createRequestBody(params),headers,callback);
-    }
-    public void post(final String url, Headers headers, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
-
-        request(url,cacheType,POST,createRequestBody(params),headers,callback);
-    }
-    public void post(final String url, Map<String,String> params, String encodedKey, String encodedValue, Callback callback){
-
-        request(url,cacheType,POST,createRequestBody(params),null,callback);
-    }
-    public void post(final String url,CacheType cacheType, Map<String,String> params, String encodedKey, String encodedValue, JsonCallback callback){
-
-        request(url,cacheType,POST,createRequestBody(params),null,callback);
-    }
-    public void get(final String url, Headers headers,Callback callback){
-        request(url,cacheType,GET,null,headers,callback);
-    }
-    public void get(final String url, Headers headers, JsonCallback callback){
-        request(url,cacheType,GET,null,headers,callback);
-    }
-    public void get(final String url,Callback callback){
-        request(url,cacheType,GET,null,null,callback);
-    }
-    public void get(final String url,JsonCallback callback){
-        request(url,cacheType,GET,null,null,callback);
-    }
-    public void get(final String url,CacheType cacheType, Headers headers,Callback callback){
-        request(url,cacheType,GET,null,headers,callback);
-    }
-    public void get(final String url,CacheType cacheType, Headers headers, JsonCallback callback){
-        request(url,cacheType,GET,null,headers,callback);
-    }
-    public void get(final String url,CacheType cacheType,Callback callback){
-        request(url,cacheType,GET,null,null,callback);
-    }
-    public void get(final String url,CacheType cacheType,JsonCallback callback){
-        request(url,cacheType,GET,null,null,callback);
-    }
-
-    public static RequestBody createRequestBody(Map<String,String> params,String encodedKey,String encodedValue){
-        FormEncodingBuilder formEncodingBuilder = new FormEncodingBuilder();
+    public RequestBody createRequestBody(Map<String,String> params){
+        MultipartBody.Builder multipartBuilder = new MultipartBody.Builder();
+        multipartBuilder.setType(mediaType);
         if(params!=null&&!params.isEmpty()){
             Set<String> keys = params.keySet();
             for(String key:keys){
-                formEncodingBuilder.add(key,params.get(key));
+                multipartBuilder.addFormDataPart(key,params.get(key));
+            }
+        }
+        return multipartBuilder.build();
+    }
+
+
+    public  RequestBody createFormRequestBody(Map<String,String> params,String encodedKey,String encodedValue){
+        FormBody.Builder builder = new FormBody.Builder();
+        if(params!=null&&!params.isEmpty()){
+            Set<String> keys = params.keySet();
+            for(String key:keys){
+                builder.add(key,params.get(key));
             }
         }
         if(!TextUtils.isEmpty(encodedKey) && !TextUtils.isEmpty(encodedValue)){
-            formEncodingBuilder.addEncoded(encodedKey,encodedValue);
+            builder.addEncoded(encodedKey,encodedValue);
         }
-        return formEncodingBuilder.build();
+        return builder.build();
     }
-    public static RequestBody createRequestBody(Map<String,String> params){
-        return createRequestBody(params,null,null);
+    public  RequestBody createFormRequestBody(Map<String,String> params){
+        return createFormRequestBody(params);
     }
 
+    /**
+     * Callback Call always is null
+     * @param request
+     * @param callback
+     */
+    private void requestFromCache(Request request,Callback callback)  {
+        Response response = client.cache().get(request);
+        if(callback!=null){
+            callback.onStart();
+            try {
+                callback.onResponse(null,response);
+            } catch (IOException e) {
+//                e.printStackTrace();
+                callback.onFailure(null,e);
+            }
+            callback.onFinish();
+        }
 
+    }
+    private void requestFromNetwork(Request request, final Callback callback){
+        if(callback!=null){
+            callback.onStart();
+            Call call = client.newCall(request);
+            call.enqueue(callback);
+        }
+    }
 
-    public void request(final String url, final CacheType cacheType, final String method, final RequestBody requestBody, final Headers headers,final JsonCallback callback){
-        request(url,cacheType, method,requestBody, headers, new Callback() {
+    public  void request(final Request request, @CacheType final int cacheType, final JsonCallback callback){
+        request(request, cacheType, new Callback() {
             @Override
-            public void onStart() {
+            public void onFailure(Call call, IOException e) {
                 if(callback!=null){
-                    callback.onStart();
+                    callback.onFailure(call,e);
                 }
             }
 
-
             @Override
-            public void onFailure(Request request, IOException e) {
+            public void onResponse(Call call, Response response) throws IOException {
                 if(callback!=null){
-                    callback.onFailure(request,e);
-                    callback.onFinish();
-                }
-            }
-
-            @Override
-            public void onResponse(Response response) throws IOException {
-                if(response.isSuccessful() && callback!=null){
-                    String jsonString = response.body().string();;
-                    if(!TextUtils.isEmpty(jsonString)){
-                        Object result = null;
-                        try {
-                            result =  gson.fromJson(jsonString,callback.getType());
-                            callback.onResponse(result);
-                            callback.onFinish();
-                        } catch (JsonSyntaxException e) {
-                            callback.onFailure(null,new Exception("json string parse error :"+e.toString()));
-                            callback.onFinish();
-                            e.printStackTrace();
-                        }
-
-                    }else{
-                        callback.onFailure(null,new Exception("json string may be null"));
-                        callback.onFinish();
-                    }
+                    callback.onResponse(call,  gson.fromJson(response.body().charStream(),callback.getType()));
                 }
             }
         });
     }
 
-    public void request(final String url, final CacheType cacheType, final String method, final RequestBody requestBody, final Headers headers, final Callback callback){
-        if(callback!=null)callback.onStart();
+
+    public void request(final Request request, @CacheType final int cacheType, final Callback callback){
         switch (cacheType){
-            case ONLY_NETWORK:
-                requestFromNetwork(url,method,requestBody,headers,callback);
+            case CacheType.ONLY_NETWORK:
+                requestFromNetwork(request,callback);
                 break;
-            case ONLY_CACHED:
-                requestFromCached(url,method,requestBody,headers,callback);
+            case CacheType.ONLY_CACHED:
+                requestFromCache(request,callback);
                 break;
-            case CACHED_ELSE_NETWORK:
-                requestFromCached(url,method,requestBody,headers, new Callback() {
-                    @Override
-                    public void onStart() {
-                        if(callback!=null){
-                            callback.onStart();
-                        }
-                    }
-
-                    @Override
-                    public void onFinish() {
-                        if(callback!=null){
-                            callback.onFinish();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Request request, IOException e) {
-                        requestFromNetwork(url,method,requestBody,headers,callback);
-                    }
-
-                    @Override
-                    public void onResponse(Response response) throws IOException {
-                        if(response.code()==200){
-                            if(callback!=null){
-                                callback.onResponse(response);
-                                callback.onFinish();
-                            }
-                        }else{
-                            requestFromNetwork(url,method,requestBody,headers,callback);
-                        }
-                    }
-                });
-                break;
-            case NETWORK_ELSE_CACHED:
-                requestFromNetwork(url,method,requestBody,headers, new Callback() {
-                    @Override
-                    public void onStart() {
-                        if(callback!=null){
-                            callback.onStart();
-                        }
-                    }
-
-                    @Override
-                    public void onFinish() {
-                        if(callback!=null){
-                            callback.onFinish();
-                        }
-                    }
-
-                    @Override
-                    public void onFailure(Request request, IOException e) {
-                        requestFromCached(url,method,requestBody,headers,callback);
-                    }
-
-                    @Override
-                    public void onResponse(Response response) throws IOException {
-                        if(response.code()==200){
-                            if(callback!=null){
-                                callback.onResponse(response);
-                                callback.onFinish();
-                            }
-                        }else{
-                            requestFromCached(url,method,requestBody,headers,callback);
-                        }
-                    }
-                });
-                break;
-        }
-    }
-
-    public void requestFromNetwork(final String url,String method,RequestBody requestBody, Headers headers,final Callback callback){
-        request(url,method,requestBody,CacheControl.FORCE_NETWORK,headers,callback);
-    }
-
-    public void requestFromCached(String url,String method,RequestBody requestBody,Headers headers ,final Callback callback){
-        request(url,method,requestBody,CacheControl.FORCE_CACHE,headers,callback);
-    }
-
-    private void request(String url, String method, RequestBody requestBody, final CacheControl cacheControl, Headers headers, final Callback callback){
-        final Request.Builder requestBuilder = new Request.Builder().url(url).cacheControl(cacheControl);
-        if(headers!=null){
-            requestBuilder.headers(headers);
-        }
-        requestBuilder.method(method,requestBody);
-        requestBuilder.tag(url);
-
-        final Request request = requestBuilder.build();
-        request(request,new Callback() {
-
-            @Override
-            public void onStart() {
+            case CacheType.NETWORK_ELSE_CACHED:
                 if(callback!=null){
                     callback.onStart();
                 }
-            }
-
-            @Override
-            public void onFinish() {
-                if(callback!=null){
-                    callback.onFinish();
-                }
-            }
-
-            @Override
-            public void onFailure(Request request, IOException e) {
-                if(callback!=null){
-                    callback.onFailure(request,e);
-                    callback.onFinish();
-                }
-            }
-
-            @Override
-            public void onResponse(Response response) throws IOException {
-                if(response.code()==504){
-                    if(CacheControl.FORCE_CACHE == cacheControl){
-                        if(callback!=null){
-                            callback.onFailure(request,new IOException("cached not found"));
-                            callback.onFinish();
-                        }
-                        return;
+                requestFromNetwork(request, new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        requestFromCache(request,callback);
                     }
-                }
-                if(callback!=null){
-                    callback.onResponse(response);
-                    callback.onFinish();
-                }
-            }
-        });
-    }
 
-    public void get(OKHttpRequest okHttpRequest, Callback callback){
-        get(okHttpRequest.getUrl(),okHttpRequest.getCacheType(),okHttpRequest.getHeaders(),callback);
-    }
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
 
-    public void post(OKHttpRequest okHttpRequest,Callback callback){
-        post(okHttpRequest.getUrl(),okHttpRequest.getCacheType(),okHttpRequest.getHeaders(),okHttpRequest.getParams(),okHttpRequest.get);
-    }
+                        if(response.code()==200){
+                            if(callback!=null){
+                                callback.onResponse(call,response);
+                                callback.onFinish();
+                            }
+                        }else{
+                            requestFromCache(request,callback);
+                        }
+                    }
+                });
+                break;
+            case CacheType.CACHED_ELSE_NETWORK:
+                requestFromCache(request, new Callback() {
+                    @Override
+                    public void onFailure(Call call, IOException e) {
+                        requestFromNetwork(request,callback);
+                    }
 
-    private void request(Request request, Callback callback){
-        client.newCall(request).enqueue(callback);
-    }
-
-    private Response requestSync(Request request) throws IOException {
-        return client.newCall(request).execute();
-    }
-
-    public Response requestFromNetworkSync(final String url,String method,RequestBody requestBody, Headers headers,Object tag) throws IOException {
-        return requestSync(url,method,requestBody,CacheControl.FORCE_NETWORK,headers,tag);
-    }
-
-    public Response requestFromCachedSync(String url,String method,RequestBody requestBody,Headers headers ,Object tag) throws IOException {
-        return requestSync(url,method,requestBody,CacheControl.FORCE_CACHE,headers,tag);
-    }
-
-
-    private Response requestSync(String url, String method, RequestBody requestBody, final CacheControl cacheControl, Headers headers,Object tag) throws IOException {
-        final Request.Builder requestBuilder = new Request.Builder().url(url).cacheControl(cacheControl);
-        if(headers!=null){
-            requestBuilder.headers(headers);
+                    @Override
+                    public void onResponse(Call call, Response response) throws IOException {
+                        if(response.code()==200){
+                            if(callback!=null){
+                                callback.onResponse(call,response);
+                                callback.onFinish();
+                            }
+                        }else{
+                            requestFromNetwork(request,callback);
+                        }
+                    }
+                });
+                break;
         }
-        requestBuilder.method(method,requestBody);
-        requestBuilder.tag(tag==null?url:tag);
-
-        final Request request = requestBuilder.build();
-        return requestSync(request);
     }
+
+    public <T extends Class> T requestAsync(Request request, @CacheType final int cacheType,Class<T> classes) {
+            switch (cacheType){
+                case CacheType.ONLY_NETWORK:
+                    try {
+                        return requestFromNetworkAsync(request,classes);
+                    } catch (IOException e) {
+                        return null;
+                    }
+                case CacheType.ONLY_CACHED:
+                    try {
+                        return  requestFromCacheAsync(request,classes);
+                    } catch (IOException e) {
+                        return null;
+                    }
+                case CacheType.NETWORK_ELSE_CACHED:
+                    try {
+                        T result = requestFromNetworkAsync(request,classes);
+                        if(request==null){
+                            return requestFromCacheAsync(request,classes);
+                        }else{
+                            return result;
+                        }
+                    } catch (IOException e) {
+                        return null;
+                    }
+
+                case CacheType.CACHED_ELSE_NETWORK:
+                    try {
+                        T result = requestFromCacheAsync(request,classes);
+                        if(request==null){
+                            return requestFromNetworkAsync(request,classes);
+                        }else{
+                            return result;
+                        }
+                    } catch (IOException e) {
+                        return null;
+                    }
+            }
+        return null;
+    }
+
+    private Response requestFromCacheAsync(Request request)  {
+        return client.cache().get(request);
+    }
+    private Response requestFromNetworkAsync(Request request) throws IOException {
+        Call call = client.newCall(request);
+        return call.execute();
+    }
+    private  <T extends Class> T requestFromCacheAsync(Request request,Class<T> classes) throws IOException {
+        Response response = client.cache().get(request);
+        if(response!=null&&response.code()==200){
+            return gson.fromJson(response.body().charStream(),classes);
+        }
+        return null;
+    }
+    private   <T extends Class> T requestFromNetworkAsync(Request request, Class<T> classes) throws IOException {
+        Response response = client.newCall(request).execute();
+        if(response!=null&&response.code()==200){
+            return gson.fromJson(response.body().charStream(),classes);
+        }
+        return null;
+    }
+
+
+
+
 
 
     public static class Builder{
-        private long maxCachedSize = 5 * 1024 *1024;
+        private int maxCachedSize = 5 * 1024 *1024;
         private File cachedDir;
         private Context context;
         private List<Interceptor> networkInterceptors;
         private List<Interceptor> interceptors;
-        private int maxCacheAge = 3600 * 12;
-        private CacheType cacheType = CacheType.NETWORK_ELSE_CACHED;
+        private int cacheType = CacheType.NETWORK_ELSE_CACHED;
         private boolean isGzip = false;
+        private long timeOut = 5000;
+        private boolean debug = false;
 
 
         public Builder(Context context) {
@@ -386,15 +307,25 @@ public class OKHttpUtils<T>{
         }
 
         public OKHttpUtils build(){
-            return new OKHttpUtils(context,maxCachedSize,cachedDir,maxCacheAge,cacheType,networkInterceptors,interceptors,isGzip);
+            return new OKHttpUtils(context,maxCachedSize,cachedDir,cacheType,networkInterceptors,interceptors,isGzip,timeOut,debug);
         }
 
+
+        public Builder timeOut(long timeOut){
+            this.timeOut = timeOut;
+            return this;
+        }
+
+        public Builder debug(boolean debug) {
+            this.debug = debug;
+            return this;
+        }
         public Builder gzip(boolean openGzip) {
             this.isGzip = openGzip;
             return this;
         }
 
-        public Builder cacheType(CacheType cacheType){
+        public Builder cacheType(@CacheType int cacheType){
             this.cacheType = cacheType;
             return this;
         }
@@ -428,53 +359,23 @@ public class OKHttpUtils<T>{
             return this;
         }
 
-        public Builder maxCacheAge(int maxCacheAge){
-            this.maxCacheAge = maxCacheAge;
-            return this;
-        }
     }
 
 
 
-//    client.interceptors().add(new Interceptor() {
-//            @Override
-//            public Response intercept(Chain chain) throws IOException {
-//                Request request = chain.request();
-    //请求的url链接后面添加数据
-//                request = request.newBuilder().url(request.urlString()+"s?ie=utf-8&f=8&rsv_bp=0&rsv_idx=1&tn=98996590_hao_pg&wd=he&rsv_pq=f4953a2f000ff24d&rsv_t=04cbC9bfdepmyhGqXX6mksqeAGbXZUDDVjdafZ4rpa6%2BPtgbIZHlYi2IqlmTxdO8OxBTvKr3&rsv_enter=1&rsv_sug3=2&rsv_sug1=1&rsv_sug2=0&inputT=680&rsv_sug4=680").build();
-//                return chain.proceed(request);
-//
-//            }
-//        });
 
 
 
 
 
-
-    /**
-     * 通过url来取消一个请求  如果使用自定义的Request,传入request的Tag为url才能有效
-     * @param url
-     */
-    public void cancel(String url){
-        try {
-            client.cancel(url);
-        } catch (Exception e) {
-//            e.printStackTrace();
-        }
-    }
 
 
 
     public Call uploadFile(String url, File file, Headers headers, UploadListener uploadListener){
 
-        MultipartBuilder multipartBuilder = new MultipartBuilder();
+        MultipartBody.Builder multipartBuilder = new MultipartBody.Builder();
 
-        if(headers!=null){
-            multipartBuilder.addPart(headers,createUploadRequestBody(MultipartBuilder.FORM,file,uploadListener));
-        }else{
-            multipartBuilder.addPart(createUploadRequestBody(MultipartBuilder.FORM,file,uploadListener));
-        }
+        multipartBuilder.addPart(headers,createUploadRequestBody(MultipartBody.FORM,file,uploadListener));
         Request request = new Request.Builder()
                 .url(url)
                 .post(multipartBuilder.build())
@@ -485,7 +386,6 @@ public class OKHttpUtils<T>{
 
     }
 
-    //参考自 http://blog.csdn.net/djk_dong/article/details/48179315
     public RequestBody createUploadRequestBody(final MediaType contentType, final File file, final UploadListener listener) {
         return new RequestBody() {
             @Override
@@ -526,7 +426,8 @@ public class OKHttpUtils<T>{
             }
 
             Request compressedRequest = originalRequest.newBuilder()
-                    .header("Content-Encoding", "gzip")
+                    .header("Accept-Encoding","gzip")
+//                    .header("Content-Encoding", "gzip")
                     .method(originalRequest.method(), gzip(originalRequest.body()))
                     .build();
             return chain.proceed(compressedRequest);
@@ -551,6 +452,11 @@ public class OKHttpUtils<T>{
         }
     }
 
+
+    /**
+     * okhttp内部默认启用了gzip,此选项是针对需要对post数据进行gzip后发送给服务器的,如服务器不支持,请勿开启
+     * @param open
+     */
     public void gzip(boolean open){
         if(open){
             if(!client.interceptors().contains(gzipRequestInterceptor)){
@@ -562,5 +468,14 @@ public class OKHttpUtils<T>{
             }
         }
     }
+
+    public void clearCached(){
+        try {
+            client.cache().delete();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
 
 }

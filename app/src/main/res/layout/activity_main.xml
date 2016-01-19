@@ -36,6 +36,14 @@
         android:layout_marginTop="30dp"
         android:text="CACHED_ELSE_NETWORK"/>
 
+    <TextView
+        android:id="@+id/tv6"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="30dp"
+        android:text="custom max-age=5,ONLY_CACHED"/>
+
+
 
     <TextView
         android:id="@+id/tv5"
