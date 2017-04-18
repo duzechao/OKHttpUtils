@@ -1,6 +1,6 @@
-#＃ OKHttpUtils
+# ＃ OKHttpUtils
 依赖于okhttp，修改了小部分的okhttp源码，将Cache的部分方法改成public来查询缓存
-#如果需要文件下载，请看这个库[DownloadManager](https://github.com/duzechao/DownloadManager)
+# 如果需要文件下载，请看这个库[DownloadManager](https://github.com/duzechao/DownloadManager)
 
 对OkHttp进行封装，实现了只查询缓存，网络请求失败自动查询本地缓存等功能,结果用Gson解析
 支持文件上传进度回调
@@ -17,7 +17,7 @@
 *NETWORK_ELSE_CACHED  先查询网络数据，如果没有，再查询本地缓存
 
 
-#简单使用方法：
+# 简单使用方法：
  1.
 
     okHttpUtils = new OKHttpUtils.Builder(this).build();
@@ -58,12 +58,12 @@
   requestAsync()方法，同步请求
   `
 
-#可添加拦截器
+# 可添加拦截器
 通过interceptors()和networkInterceptors()可添加拦截器
 
-#添加回调
+# 添加回调
     调用的时候传入CallBack或JsonCallBack,JsonCallBack使用了Gson解析,JsonCallBack<DateModule>或JsonCallBack<List<DateModule>>来解析当个module或一个list，支持List<Map<Object,Object>等
 
-#more
+# more
 如果所提供的功能不满足需求，可通过getClient()获取到OKHttpClient来使用原生okhttp的功能
 
